@@ -1,0 +1,1 @@
+com.devsgroup.foodmanager.core.designsystem

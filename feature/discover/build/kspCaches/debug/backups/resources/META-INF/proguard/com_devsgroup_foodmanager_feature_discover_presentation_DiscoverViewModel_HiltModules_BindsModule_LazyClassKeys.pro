@@ -1,0 +1,1 @@
+-keep,allowobfuscation,allowshrinking class com.devsgroup.foodmanager.feature.discover.presentation.DiscoverViewModel

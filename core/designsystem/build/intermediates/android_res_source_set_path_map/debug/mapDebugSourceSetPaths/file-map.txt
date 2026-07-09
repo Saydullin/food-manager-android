@@ -1,0 +1,9 @@
+com.devsgroup.foodmanager.core.designsystem-pngs-0 C:\Users\saydu\AndroidStudioProjects\FoodManager2\core\designsystem\build\generated\res\pngs\debug
+com.devsgroup.foodmanager.core.designsystem-updated_navigation_xml-1 C:\Users\saydu\AndroidStudioProjects\FoodManager2\core\designsystem\build\generated\updated_navigation_xml\debug
+com.devsgroup.foodmanager.core.designsystem-mergeDebugResources-2 C:\Users\saydu\AndroidStudioProjects\FoodManager2\core\designsystem\build\intermediates\incremental\debug\mergeDebugResources\merged.dir
+com.devsgroup.foodmanager.core.designsystem-mergeDebugResources-3 C:\Users\saydu\AndroidStudioProjects\FoodManager2\core\designsystem\build\intermediates\incremental\debug\mergeDebugResources\stripped.dir
+com.devsgroup.foodmanager.core.designsystem-debug-4 C:\Users\saydu\AndroidStudioProjects\FoodManager2\core\designsystem\build\intermediates\merged_res\debug\mergeDebugResources
+com.devsgroup.foodmanager.core.designsystem-debug-5 C:\Users\saydu\AndroidStudioProjects\FoodManager2\core\designsystem\build\intermediates\packaged_res\debug\packageDebugResources
+com.devsgroup.foodmanager.core.designsystem-debug-6 C:\Users\saydu\AndroidStudioProjects\FoodManager2\core\designsystem\src\debug\res
+com.devsgroup.foodmanager.core.designsystem-main-7 C:\Users\saydu\AndroidStudioProjects\FoodManager2\core\designsystem\src\main\res
+gradleHome-0 C:\Users\saydu\.gradle
