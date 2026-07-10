@@ -1,9 +1,0 @@
-com.devsgroup.foodmanager.feature.favorites-pngs-0 C:\Users\saydu\AndroidStudioProjects\FoodManager2\feature\favorites\build\generated\res\pngs\debug
-com.devsgroup.foodmanager.feature.favorites-updated_navigation_xml-1 C:\Users\saydu\AndroidStudioProjects\FoodManager2\feature\favorites\build\generated\updated_navigation_xml\debug
-com.devsgroup.foodmanager.feature.favorites-mergeDebugResources-2 C:\Users\saydu\AndroidStudioProjects\FoodManager2\feature\favorites\build\intermediates\incremental\debug\mergeDebugResources\merged.dir
-com.devsgroup.foodmanager.feature.favorites-mergeDebugResources-3 C:\Users\saydu\AndroidStudioProjects\FoodManager2\feature\favorites\build\intermediates\incremental\debug\mergeDebugResources\stripped.dir
-com.devsgroup.foodmanager.feature.favorites-debug-4 C:\Users\saydu\AndroidStudioProjects\FoodManager2\feature\favorites\build\intermediates\merged_res\debug\mergeDebugResources
-com.devsgroup.foodmanager.feature.favorites-debug-5 C:\Users\saydu\AndroidStudioProjects\FoodManager2\feature\favorites\build\intermediates\packaged_res\debug\packageDebugResources
-com.devsgroup.foodmanager.feature.favorites-debug-6 C:\Users\saydu\AndroidStudioProjects\FoodManager2\feature\favorites\src\debug\res
-com.devsgroup.foodmanager.feature.favorites-main-7 C:\Users\saydu\AndroidStudioProjects\FoodManager2\feature\favorites\src\main\res
-gradleHome-0 C:\Users\saydu\.gradle

@@ -1,1 +1,0 @@
--keep,allowobfuscation,allowshrinking class com.devsgroup.foodmanager.feature.favorites.presentation.FavoritesViewModel
