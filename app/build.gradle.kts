@@ -1,9 +1,13 @@
+import com.android.build.api.variant.impl.VariantOutputImpl
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
 }
+
+val appVersionName = "1.0-beta.1"
 
 android {
     namespace = "com.devsgroup.foodmanager"
@@ -15,8 +19,8 @@ android {
         applicationId = "com.devsgroup.foodmanager"
         minSdk = 29
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0"
+        versionName = appVersionName
+        versionCode = versionCode(versionName)
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -38,6 +42,45 @@ android {
     buildFeatures {
         compose = true
     }
+}
+
+// Rename every built APK to FoodManager_<versionName>.apk.
+// AGP 9 removed the legacy `applicationVariants` API, so this hooks the new
+// variant API instead. Debug/release land in their own outputs/apk/<type>/ folder.
+androidComponents {
+    onVariants { variant ->
+        variant.outputs.forEach { output ->
+            (output as? VariantOutputImpl)?.outputFileName?.set("FoodManager_$appVersionName.apk")
+        }
+    }
+}
+
+fun versionCode(versionName: String?): Int {
+    if (versionName.isNullOrBlank()) return 1
+
+    val numbers = Regex("""\d+""")
+        .findAll(versionName)
+        .map { it.value.toLong() }
+        .toList()
+
+    if (numbers.isEmpty()) return 1
+
+    val major = numbers.getOrElse(0) { 0 }
+    val minor = numbers.getOrElse(1) { 0 }
+    val patch = numbers.getOrElse(2) { 0 }
+    val build = numbers.getOrElse(3) { 0 }
+    val extra = numbers.drop(4).sum()
+
+    val result = major * 1_000_000_000 +
+            minor * 1_000_000 +
+            patch * 10_000 +
+            build * 100 +
+            extra
+
+    return result
+        .coerceAtMost(2_100_000_000L)
+        .toInt()
+        .coerceAtLeast(1)
 }
 
 dependencies {
