@@ -13,6 +13,7 @@ import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.devsgroup.foodmanager.core.designsystem.component.FoodTopAppBar
 import com.devsgroup.foodmanager.navigation.FoodNavHost
 import com.devsgroup.foodmanager.navigation.TopLevelDestination
 
@@ -22,15 +23,22 @@ fun FoodApp() {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
 
-    // Only the top-level (bottom-bar) destinations show the navigation bar.
-    val showBottomBar = TopLevelDestination.entries.any { destination ->
+    // The active bottom-nav destination, or null on child screens (details, onboarding).
+    // Its presence drives the shared header title AND whether the navigation bar shows.
+    val currentTopLevelDestination = TopLevelDestination.entries.firstOrNull { destination ->
         currentDestination?.hasRoute(destination.route::class) == true
     }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
+        topBar = {
+            // Top-level screens share one header; child screens supply their own.
+            if (currentTopLevelDestination != null) {
+                FoodTopAppBar(title = currentTopLevelDestination.label)
+            }
+        },
         bottomBar = {
-            if (showBottomBar) {
+            if (currentTopLevelDestination != null) {
                 NavigationBar {
                     TopLevelDestination.entries.forEach { destination ->
                         val selected =
