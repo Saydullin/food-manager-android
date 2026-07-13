@@ -1,6 +1,5 @@
 package com.devsgroup.foodmanager.navigation
 
-import com.devsgroup.foodmanager.feature.discover.navigation.DiscoverRoute
 import com.devsgroup.foodmanager.feature.favorites.navigation.FavoritesRoute
 import com.devsgroup.foodmanager.feature.profile.navigation.ProfileRoute
 import com.devsgroup.foodmanager.feature.recommendations.navigation.RecommendationsRoute
@@ -15,8 +14,7 @@ enum class TopLevelDestination(
     val emoji: String,
     val route: Any,
 ) {
-    DISCOVER("Discover", "🍽️", DiscoverRoute),
-    RECOMMENDATIONS("For You", "✨", RecommendationsRoute),
-    FAVORITES("Favorites", "❤️", FavoritesRoute),
-    PROFILE("Profile", "👤", ProfileRoute),
+    RECOMMENDATIONS("Что выбрать", "✨", RecommendationsRoute),
+    FAVORITES("Сохраненное", "❤️", FavoritesRoute),
+    PROFILE("Профиль", "👤", ProfileRoute),
 }

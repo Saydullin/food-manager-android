@@ -1,16 +1,31 @@
 package com.devsgroup.foodmanager.feature.recommendations.presentation
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.devsgroup.foodmanager.core.ui.PlaceholderScreen
 
 @Composable
 internal fun RecommendationsScreen(
     onFoodClick: (foodId: String) -> Unit,
     viewModel: RecommendationsViewModel = hiltViewModel(),
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    PlaceholderScreen(title = uiState.screenTitle)
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+        ) {
+
+        }
+
+        // The footer molecule; events flow up to the ViewModel (unidirectional data flow).
+        RecommendationActionsBar(
+            onLater = viewModel::onLater,
+            onReject = viewModel::onReject,
+            onAddToCart = viewModel::onAddToCart,
+        )
+    }
+
 }

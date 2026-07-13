@@ -14,6 +14,6 @@ internal val FoodShapes = Shapes(
     extraSmall = RoundedCornerShape(10.dp),
     small = RoundedCornerShape(14.dp),
     medium = RoundedCornerShape(20.dp),
-    large = RoundedCornerShape(26.dp),
+    large = RoundedCornerShape(20.dp),
     extraLarge = RoundedCornerShape(32.dp),
 )
