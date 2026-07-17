@@ -20,8 +20,9 @@ import com.devsgroup.foodmanager.core.designsystem.theme.FoodManagerTheme
 
 /**
  * Recommendation footer — a *molecule* that arranges the design-system button
- * *atoms* into the three swipe actions from the "Для вас" mock:
- * "Позже" (skip for now), "Не то" (reject), "В корзину" (add to cart).
+ * *atoms* into the three actions from the "Для вас" mock: "Сохранить" (save to
+ * favorites), "Не люблю" (dislike — opens the [DislikeReasonSheet]), and
+ * "Пропустить" (skip without a verdict).
  *
  * It lives in the feature — not in `:core:designsystem` — because these three
  * actions are specific to the recommendations flow, and not in `:core:ui`
@@ -31,12 +32,11 @@ import com.devsgroup.foodmanager.core.designsystem.theme.FoodManagerTheme
  * the discover deck) ever needs the same bar.
  *
  * Leading icons are vector drawables from `:core:designsystem` passed as a
- * [androidx.compose.ui.graphics.painter.Painter]; only "Позже" (`ic_skip`) has an
- * asset so far — the reject/cart drawables drop in at the marked TODOs.
+ * [androidx.compose.ui.graphics.painter.Painter].
  */
 @Composable
 internal fun RecommendationActionsBar(
-    onLater: () -> Unit,
+    onDislike: () -> Unit,
     onReject: () -> Unit,
     onAddToCart: () -> Unit,
     modifier: Modifier = Modifier,
@@ -60,15 +60,15 @@ internal fun RecommendationActionsBar(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Lowest emphasis: dismiss without a verdict.
+            // A soft "no" — opens the reason sheet to capture *why* it missed.
             FoodTonalButton(
                 modifier = Modifier
                     .weight(.4f),
-                onClick = onLater,
+                onClick = onDislike,
                 text = "Не люблю",
                 leadingIcon = painterResource(R.drawable.ic_close),
             )
-            // Medium emphasis: an explicit "no".
+            // Skip this card without recording a verdict.
             FoodOutlinedButton(
                 modifier = Modifier.weight(.5f),
                 text = "Пропустить",
@@ -85,7 +85,7 @@ private fun RecommendationActionsBarPreview() {
     FoodManagerTheme {
         Surface {
             RecommendationActionsBar(
-                onLater = {},
+                onDislike = {},
                 onReject = {},
                 onAddToCart = {},
             )
