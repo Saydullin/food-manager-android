@@ -1,7 +1,9 @@
 package com.devsgroup.foodmanager.core.data.di
 
+import com.devsgroup.foodmanager.core.data.repository.DefaultAuthRepository
 import com.devsgroup.foodmanager.core.data.repository.DefaultFoodRepository
 import com.devsgroup.foodmanager.core.data.repository.DefaultTasteProfileRepository
+import com.devsgroup.foodmanager.core.domain.repository.AuthRepository
 import com.devsgroup.foodmanager.core.domain.repository.FoodRepository
 import com.devsgroup.foodmanager.core.domain.repository.TasteProfileRepository
 import dagger.Binds
@@ -22,4 +24,8 @@ abstract class DataModule {
     @Binds
     @Singleton
     abstract fun bindsTasteProfileRepository(impl: DefaultTasteProfileRepository): TasteProfileRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindsAuthRepository(impl: DefaultAuthRepository): AuthRepository
 }

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!--
+        The Food Manager dev backend runs over plain HTTP on localhost:3000.
+        Android blocks cleartext traffic by default (API 28+), so permit it only
+        for the local-dev hosts: 10.0.2.2 is the host loopback from the emulator.
+        Production traffic stays HTTPS-only.
+    -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>

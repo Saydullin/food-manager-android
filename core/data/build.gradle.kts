@@ -29,6 +29,12 @@ dependencies {
 
     implementation(libs.kotlinx.coroutines.android)
 
+    // Auth error mapping: catch retrofit2.HttpException and decode the server's
+    // JSON error envelope (both are `implementation` details of :core:network and
+    // therefore not on this module's classpath transitively).
+    implementation(libs.retrofit)
+    implementation(libs.kotlinx.serialization.json)
+
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
 
