@@ -28,6 +28,13 @@ interface AuthRepository {
     /** True while a valid access token is stored. */
     val isLoggedIn: Flow<Boolean>
 
+    /**
+     * The id of this device's registration, or null if this device has never
+     * registered/added a key. Set by [register]/[addDevice]/[confirmRecovery] and, unlike
+     * [tokens], survives [logout] — a later [verify] call on the same device needs it.
+     */
+    val deviceId: Flow<String?>
+
     /** Whether [username] is free to register. */
     suspend fun isUsernameAvailable(username: String): Boolean
 

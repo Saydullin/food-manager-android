@@ -85,6 +85,7 @@ fun versionCode(versionName: String?): Int {
 
 dependencies {
     // Feature modules — the app is the composition root that assembles them.
+    implementation(project(":feature:auth"))
     implementation(project(":feature:onboarding"))
     implementation(project(":feature:discover"))
     implementation(project(":feature:recommendations"))

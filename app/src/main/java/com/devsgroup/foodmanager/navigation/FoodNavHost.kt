@@ -2,8 +2,13 @@ package com.devsgroup.foodmanager.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
+import androidx.navigation.navOptions
+import com.devsgroup.foodmanager.feature.auth.navigation.authScreens
+import com.devsgroup.foodmanager.feature.auth.navigation.navigateToLogin
+import com.devsgroup.foodmanager.feature.auth.navigation.navigateToRegistration
 import com.devsgroup.foodmanager.feature.details.navigation.foodDetailsScreen
 import com.devsgroup.foodmanager.feature.details.navigation.navigateToFoodDetails
 import com.devsgroup.foodmanager.feature.favorites.navigation.favoritesScreen
@@ -17,20 +22,36 @@ import com.devsgroup.foodmanager.feature.recommendations.navigation.recommendati
  * Assembles every feature's navigation graph. This is the only place that depends
  * on all features at once — features never depend on each other.
  *
- * Starts on [RecommendationsRoute] for a runnable demo. In production, gate the
- * start destination on `TasteProfileRepository.isOnboardingComplete()` and route
- * new users through [OnboardingRoute] first.
+ * [startDestination] is chosen by the app-level auth gate: signed-out users start in
+ * the auth flow ([com.devsgroup.foodmanager.feature.auth.navigation.RegistrationRoute]),
+ * signed-in users on [RecommendationsRoute].
  */
 @Composable
 fun FoodNavHost(
     navController: NavHostController,
+    startDestination: Any,
     modifier: Modifier = Modifier,
 ) {
     NavHost(
         navController = navController,
-        startDestination = RecommendationsRoute,
+        startDestination = startDestination,
         modifier = modifier,
     ) {
+        authScreens(
+            onAuthenticated = {
+                navController.navigate(RecommendationsRoute) {
+                    // Clear the auth flow so Back never returns to it.
+                    popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
+                    launchSingleTop = true
+                }
+            },
+            onNavigateToLogin = {
+                navController.navigateToLogin(navOptions { launchSingleTop = true })
+            },
+            onNavigateToRegistration = {
+                navController.navigateToRegistration(navOptions { launchSingleTop = true })
+            },
+        )
         onboardingScreen(
             onFinished = {
                 navController.navigate(RecommendationsRoute) {

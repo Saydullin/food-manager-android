@@ -61,6 +61,8 @@ class DefaultAuthRepository @Inject constructor(
     override val isLoggedIn: Flow<Boolean> =
         authPrefs.accessTokenFlow.map { !it.isNullOrBlank() }
 
+    override val deviceId: Flow<String?> = authPrefs.deviceIdFlow
+
     override suspend fun isUsernameAvailable(username: String): Boolean = apiCall {
         authApi.usernameAvailable(username).available
     }
@@ -75,6 +77,7 @@ class DefaultAuthRepository @Inject constructor(
             RegisterRequest(username, publicKey, deviceLabel, email),
         )
         authPrefs.updateTokens(response.accessToken, response.refreshToken)
+        authPrefs.updateDeviceId(response.device.id)
         response.toDomain()
     }
 
@@ -130,7 +133,9 @@ class DefaultAuthRepository @Inject constructor(
     }
 
     override suspend fun addDevice(publicKey: String, deviceLabel: String?): AuthDevice = apiCall {
-        authApi.addDevice(AddDeviceRequest(publicKey, deviceLabel)).toDomain()
+        val device = authApi.addDevice(AddDeviceRequest(publicKey, deviceLabel)).toDomain()
+        authPrefs.updateDeviceId(device.id)
+        device
     }
 
     override suspend fun revokeDevice(deviceId: String) = apiCall {
@@ -150,6 +155,7 @@ class DefaultAuthRepository @Inject constructor(
             ConfirmRecoveryRequest(recoveryToken, newPublicKey, deviceLabel),
         )
         authPrefs.updateTokens(response.accessToken, response.refreshToken)
+        authPrefs.updateDeviceId(response.device.id)
         response.toDomain()
     }
 

@@ -18,10 +18,7 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    // 10.0.2.2 is the host machine's loopback as seen from the Android emulator,
-    // where the Food Manager dev server listens on :3000. Swap for a LAN IP when
-    // testing on a physical device, or the production host when shipping.
-    private const val BASE_URL = "http://10.0.2.2:3000/api/"
+    private const val BASE_URL = "http://192.168.80.132:3000/api/"
 
     @Provides
     @Singleton
