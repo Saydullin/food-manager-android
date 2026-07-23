@@ -185,20 +185,15 @@ private val FoodTextFieldCheckStatus.message: String
         is FoodTextFieldCheckStatus.Available -> message
     }
 
-/**
- * The eyebrow above the field: the [label] in the tracked-out `labelLarge` voice, plus a
- * muted "· [OPTIONAL_MARKER]" tail when the field is optional. Kept private — the marker
- * is part of "how our fields look", not a caller concern.
- */
 @Composable
 private fun FieldLabel(label: String, isRequired: Boolean) {
     val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
     Text(
         text = buildAnnotatedString {
             append(label)
-            if (!isRequired) {
+            if (isRequired) {
                 withStyle(SpanStyle(color = onSurfaceVariant)) {
-                    append(" · $OPTIONAL_MARKER")
+                    append(REQUIRED_MARKER)
                 }
             }
         },
@@ -208,9 +203,7 @@ private fun FieldLabel(label: String, isRequired: Boolean) {
     )
 }
 
-// The app ships a single (Russian) locale, matching the module's other in-place copy;
-// this is the one string this atom owns, so it lives here for a single-file edit.
-private const val OPTIONAL_MARKER = "необязательно"
+private const val REQUIRED_MARKER = "*"
 
 @Preview
 @Composable

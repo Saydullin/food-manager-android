@@ -1,5 +1,11 @@
 package com.devsgroup.foodmanager.core.designsystem.component
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -20,11 +26,12 @@ import com.devsgroup.foodmanager.core.designsystem.theme.FoodManagerTheme
  * atom — the top-bar sibling to the [FoodButton] family. `@OptIn` is contained
  * here, so callers never touch the experimental Material 3 API.
  *
- * Placement (see FoodApp / feature screens):
- *  - Top-level screens ("Для вас", "Обзор", …) share one instance hosted at the app
- *    level, with the title coming from the active bottom-nav destination.
- *  - Child screens (food details) render their own header with a back
- *    [navigationIcon] inside the feature's own Scaffold.
+ * Exactly one instance of this lives in the whole app, hosted by `FoodApp`'s
+ * Scaffold — top-level screens and pushed child screens alike just report what it
+ * should show (see `ReportFoodTopBar`) rather than each mounting their own bar.
+ * That keeps this composable's own lifetime — and so its height — stable across
+ * every push/pop; only [title] crosses over, which is why it is cross-faded here
+ * instead of swapped instantly.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,7 +44,15 @@ fun FoodTopAppBar(
 ) {
     TopAppBar(
         title = {
-            Text(text = title, style = MaterialTheme.typography.headlineSmall)
+            AnimatedContent(
+                targetState = title,
+                transitionSpec = {
+                    fadeIn() togetherWith fadeOut() using SizeTransform(clip = false)
+                },
+                label = "FoodTopAppBarTitle",
+            ) { animatedTitle ->
+                Text(text = animatedTitle, style = MaterialTheme.typography.headlineSmall)
+            }
         },
         modifier = modifier,
         navigationIcon = navigationIcon,

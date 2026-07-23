@@ -5,6 +5,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -113,6 +114,7 @@ private fun ProfileContent(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 18.dp)
                 .padding(top = 8.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(28.dp)
         ) {
             ProfileHeader(profile = uiState.profile, onEditClick = onEditProfileClick)
             TasteProfileSection(
@@ -124,24 +126,20 @@ private fun ProfileContent(
                 onAddAvoidTagClick = onAddAvoidTagClick,
                 onRemoveAvoidTag = onRemoveAvoidTag,
                 onDietClick = onDietClick,
-                modifier = Modifier.padding(top = 22.dp),
             )
             GroupsSection(
                 groups = uiState.groups,
                 onNewGroupClick = onNewGroupClick,
                 onGroupClick = onGroupClick,
                 onDeleteGroup = onDeleteGroup,
-                modifier = Modifier.padding(top = 26.dp),
             )
             MyRecipesSection(
                 recipes = uiState.myRecipes,
                 onCreateClick = onCreateRecipeClick,
-                modifier = Modifier.padding(top = 26.dp),
             )
             LikedDishesSection(
                 likedFoods = uiState.likedFoods,
                 onUnlike = onUnlikeFood,
-                modifier = Modifier.padding(top = 26.dp),
             )
             SettingsSection(
                 notificationsEnabled = uiState.notificationsEnabled,
@@ -152,7 +150,6 @@ private fun ProfileContent(
                 onLanguageClick = onLanguageClick,
                 onHelpClick = onHelpClick,
                 onLogoutClick = onLogoutClick,
-                modifier = Modifier.padding(top = 26.dp),
             )
         }
 
@@ -166,7 +163,7 @@ private fun ProfileContent(
 
     when (val sheet = uiState.sheet) {
         is ProfileSheet.AddFavoriteTag -> TextInputSheet(
-            title = "Добавить вкус",
+            title = "Добавить предпочтения",
             helper = "Например: «Острое», «Итальянская», «Рыба»",
             fieldLabel = "ТЕГ",
             value = sheet.input,
@@ -178,7 +175,7 @@ private fun ProfileContent(
         )
 
         is ProfileSheet.AddAvoidTag -> TextInputSheet(
-            title = "Добавить в «Избегает»",
+            title = "Добавить исключения",
             helper = "Аллергия или блюдо, которое не хочется видеть в подборке",
             fieldLabel = "ТЕГ",
             value = sheet.input,

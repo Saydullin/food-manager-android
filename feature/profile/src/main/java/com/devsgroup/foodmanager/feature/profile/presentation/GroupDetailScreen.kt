@@ -13,11 +13,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -28,7 +30,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.devsgroup.foodmanager.core.designsystem.R
 import com.devsgroup.foodmanager.core.designsystem.component.FoodAccentButton
 import com.devsgroup.foodmanager.core.designsystem.component.FoodIconButton
-import com.devsgroup.foodmanager.core.designsystem.component.FoodTopAppBar
+import com.devsgroup.foodmanager.core.designsystem.component.FoodTopBarConfig
+import com.devsgroup.foodmanager.core.designsystem.component.LocalFoodTopBarState
+import com.devsgroup.foodmanager.core.designsystem.component.ReportFoodTopBar
 import com.devsgroup.foodmanager.core.designsystem.theme.FoodManagerTheme
 import com.devsgroup.foodmanager.core.model.GroupMember
 
@@ -64,57 +68,53 @@ private fun GroupDetailContent(
     onDismissInvite: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            FoodTopAppBar(
-                title = uiState.groupName,
-                navigationIcon = {
-                    FoodIconButton(
-                        icon = painterResource(R.drawable.ic_arrow_back),
-                        contentDescription = "Назад",
-                        onClick = onBack,
-                    )
-                },
-            )
-        },
-    ) { contentPadding ->
-        Box(modifier = Modifier.padding(contentPadding).fillMaxSize()) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 18.dp, vertical = 10.dp),
+    ReportFoodTopBar(
+        FoodTopBarConfig(
+            title = uiState.groupName,
+            navigationIcon = {
+                FoodIconButton(
+                    icon = painterResource(R.drawable.ic_arrow_back),
+                    contentDescription = "Назад",
+                    onClick = onBack,
+                )
+            },
+        ),
+    )
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 18.dp, vertical = 10.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = "УЧАСТНИКИ",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    FoodAccentButton(text = "＋ Пригласить", onClick = onInviteClick)
-                }
-                Column(
-                    modifier = Modifier.padding(top = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(9.dp),
-                ) {
-                    uiState.members.forEach { member ->
-                        MemberRow(member = member, onOfferClick = onOfferClick)
-                    }
+                Text(
+                    text = "УЧАСТНИКИ",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                FoodAccentButton(text = "＋ Пригласить", onClick = onInviteClick)
+            }
+            Column(
+                modifier = Modifier.padding(top = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(9.dp),
+            ) {
+                uiState.members.forEach { member ->
+                    MemberRow(member = member, onOfferClick = onOfferClick)
                 }
             }
-
-            ProfileToastHost(
-                message = uiState.toast,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 14.dp),
-            )
         }
+
+        ProfileToastHost(
+            message = uiState.toast,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 14.dp),
+        )
     }
 
     if (uiState.inviteSheetOpen) {
@@ -189,21 +189,23 @@ private fun MemberRow(
 private fun GroupDetailScreenPreview() {
     FoodManagerTheme {
         Surface {
-            GroupDetailContent(
-                uiState = GroupDetailUiState(
-                    groupName = "Семья",
-                    members = listOf(
-                        GroupMember(id = "1", name = "Вы", role = "Организатор"),
-                        GroupMember(id = "2", name = "Олег", role = "Приглашён(а)", isPending = true),
+            CompositionLocalProvider(LocalFoodTopBarState provides remember { mutableStateOf(null) }) {
+                GroupDetailContent(
+                    uiState = GroupDetailUiState(
+                        groupName = "Семья",
+                        members = listOf(
+                            GroupMember(id = "1", name = "Вы", role = "Организатор"),
+                            GroupMember(id = "2", name = "Олег", role = "Приглашён(а)", isPending = true),
+                        ),
                     ),
-                ),
-                onBack = {},
-                onInviteClick = {},
-                onOfferClick = {},
-                onInviteInputChange = {},
-                onSendInvite = {},
-                onDismissInvite = {},
-            )
+                    onBack = {},
+                    onInviteClick = {},
+                    onOfferClick = {},
+                    onInviteInputChange = {},
+                    onSendInvite = {},
+                    onDismissInvite = {},
+                )
+            }
         }
     }
 }

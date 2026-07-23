@@ -3,6 +3,10 @@ package com.devsgroup.foodmanager.feature.profile.presentation
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.PickVisualMediaRequest
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,11 +24,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,7 +50,9 @@ import com.devsgroup.foodmanager.core.designsystem.component.FoodButton
 import com.devsgroup.foodmanager.core.designsystem.component.FoodIconButton
 import com.devsgroup.foodmanager.core.designsystem.component.FoodTextField
 import com.devsgroup.foodmanager.core.designsystem.component.FoodToggleChip
-import com.devsgroup.foodmanager.core.designsystem.component.FoodTopAppBar
+import com.devsgroup.foodmanager.core.designsystem.component.FoodTopBarConfig
+import com.devsgroup.foodmanager.core.designsystem.component.LocalFoodTopBarState
+import com.devsgroup.foodmanager.core.designsystem.component.ReportFoodTopBar
 import com.devsgroup.foodmanager.core.designsystem.theme.FoodManagerTheme
 import com.devsgroup.foodmanager.core.model.CookingAttitude
 
@@ -94,104 +102,105 @@ private fun EditProfileContent(
     onSaveClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            FoodTopAppBar(
-                title = "Редактировать профиль",
-                navigationIcon = {
+    ReportFoodTopBar(
+        FoodTopBarConfig(
+            title = "Редактировать профиль",
+            navigationIcon = {
+                val visibleState = remember { MutableTransitionState(false).apply { targetState = true } }
+                AnimatedVisibility(
+                    visibleState = visibleState,
+                    enter = slideInHorizontally(initialOffsetX = { -it }) + fadeIn(),
+                ) {
                     FoodIconButton(
                         icon = painterResource(R.drawable.ic_arrow_back),
                         contentDescription = "Назад",
                         onClick = onBack,
                     )
-                },
-            )
-        },
-    ) { contentPadding ->
-        Column(
-            modifier = Modifier
-                .padding(contentPadding)
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-        ) {
-            EditProfileAvatarSection(
-                avatarUrl = uiState.avatarUrl,
-                displayName = uiState.name.ifBlank { uiState.username },
-                statusEmoji = uiState.statusEmoji,
-                onAvatarClick = onAvatarClick,
-                onStatusEmojiSelect = onStatusEmojiSelect,
-                onDeletePhotoClick = onDeletePhotoClick,
-            )
-            Spacer(Modifier.height(24.dp))
-            FoodTextField(
-                value = uiState.username,
-                onValueChange = onUsernameChange,
-                label = "НИКНЕЙМ",
-                placeholder = "nickname",
-                description = "Отображается с «@» перед именем".takeIf { uiState.usernameError == null },
-                isError = uiState.usernameError != null,
-                errorMessage = uiState.usernameError,
-                keyboardOptions = KeyboardOptions(
-                    capitalization = KeyboardCapitalization.None,
-                    imeAction = ImeAction.Next,
-                ),
-            )
-            Spacer(Modifier.height(18.dp))
-            FoodTextField(
-                value = uiState.name,
-                onValueChange = onNameChange,
-                label = "ИМЯ",
-                isRequired = false,
-                placeholder = "Как вас называть",
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-            )
-            Spacer(Modifier.height(18.dp))
-            FoodTextField(
-                value = uiState.age,
-                onValueChange = onAgeChange,
-                label = "ВОЗРАСТ",
-                isRequired = false,
-                placeholder = "Например, 28",
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
-            )
-            Spacer(Modifier.height(18.dp))
-            Text(
-                text = "ОТНОШЕНИЕ К ГОТОВКЕ · необязательно",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Spacer(Modifier.height(8.dp))
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(9.dp),
-                verticalArrangement = Arrangement.spacedBy(9.dp),
-            ) {
-                CookingAttitude.entries.forEach { attitude ->
-                    FoodToggleChip(
-                        label = attitude.label,
-                        selected = uiState.cookingAttitude == attitude,
-                        onClick = { onCookingAttitudeSelect(attitude) },
-                    )
                 }
+            },
+        ),
+    )
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp, vertical = 16.dp),
+    ) {
+        EditProfileAvatarSection(
+            avatarUrl = uiState.avatarUrl,
+            displayName = uiState.name.ifBlank { uiState.username },
+            statusEmoji = uiState.statusEmoji,
+            onAvatarClick = onAvatarClick,
+            onStatusEmojiSelect = onStatusEmojiSelect,
+            onDeletePhotoClick = onDeletePhotoClick,
+        )
+        Spacer(Modifier.height(24.dp))
+        FoodTextField(
+            value = uiState.username,
+            onValueChange = onUsernameChange,
+            label = "НИКНЕЙМ",
+            placeholder = "nickname",
+            description = "Отображается с «@» перед именем".takeIf { uiState.usernameError == null },
+            isError = uiState.usernameError != null,
+            errorMessage = uiState.usernameError,
+            keyboardOptions = KeyboardOptions(
+                capitalization = KeyboardCapitalization.None,
+                imeAction = ImeAction.Next,
+            ),
+        )
+        Spacer(Modifier.height(18.dp))
+        FoodTextField(
+            value = uiState.name,
+            onValueChange = onNameChange,
+            label = "ИМЯ",
+            isRequired = false,
+            placeholder = "Как вас называть",
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+        )
+        Spacer(Modifier.height(18.dp))
+        FoodTextField(
+            value = uiState.age,
+            onValueChange = onAgeChange,
+            label = "ВОЗРАСТ",
+            isRequired = false,
+            placeholder = "Например, 28",
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+        )
+        Spacer(Modifier.height(18.dp))
+        Text(
+            text = "ОТНОШЕНИЕ К ГОТОВКЕ",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Spacer(Modifier.height(8.dp))
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(9.dp),
+            verticalArrangement = Arrangement.spacedBy(9.dp),
+        ) {
+            CookingAttitude.entries.forEach { attitude ->
+                FoodToggleChip(
+                    label = attitude.label,
+                    selected = uiState.cookingAttitude == attitude,
+                    onClick = { onCookingAttitudeSelect(attitude) },
+                )
             }
-            Spacer(Modifier.height(18.dp))
-            FoodTextField(
-                value = uiState.bio,
-                onValueChange = onBioChange,
-                label = "О СЕБЕ",
-                isRequired = false,
-                placeholder = "Пара слов о себе",
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            )
-            Spacer(Modifier.height(28.dp))
-            FoodButton(
-                text = if (uiState.isSaving) "Сохраняем…" else "Сохранить",
-                onClick = onSaveClick,
-                enabled = uiState.canSave,
-                modifier = Modifier.fillMaxWidth(),
-            )
         }
+        Spacer(Modifier.height(18.dp))
+        FoodTextField(
+            value = uiState.bio,
+            onValueChange = onBioChange,
+            label = "О СЕБЕ",
+            isRequired = false,
+            placeholder = "Пара слов о себе",
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        )
+        Spacer(Modifier.height(28.dp))
+        FoodButton(
+            text = if (uiState.isSaving) "Сохраняем…" else "Сохранить",
+            onClick = onSaveClick,
+            enabled = uiState.canSave,
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
 
@@ -332,19 +341,21 @@ private val STATUS_EMOJIS = listOf("😄", "🌱", "🔥", "🔍", "☕", "🍚"
 private fun EditProfileScreenPreview() {
     FoodManagerTheme {
         Surface {
-            EditProfileContent(
-                uiState = EditProfileUiState(username = "chef_maria", name = "Мария", statusEmoji = "🍰"),
-                onBack = {},
-                onAvatarClick = {},
-                onDeletePhotoClick = {},
-                onStatusEmojiSelect = {},
-                onUsernameChange = {},
-                onNameChange = {},
-                onAgeChange = {},
-                onCookingAttitudeSelect = {},
-                onBioChange = {},
-                onSaveClick = {},
-            )
+            CompositionLocalProvider(LocalFoodTopBarState provides remember { mutableStateOf(null) }) {
+                EditProfileContent(
+                    uiState = EditProfileUiState(username = "chef_maria", name = "Мария", statusEmoji = "🍰"),
+                    onBack = {},
+                    onAvatarClick = {},
+                    onDeletePhotoClick = {},
+                    onStatusEmojiSelect = {},
+                    onUsernameChange = {},
+                    onNameChange = {},
+                    onAgeChange = {},
+                    onCookingAttitudeSelect = {},
+                    onBioChange = {},
+                    onSaveClick = {},
+                )
+            }
         }
     }
 }

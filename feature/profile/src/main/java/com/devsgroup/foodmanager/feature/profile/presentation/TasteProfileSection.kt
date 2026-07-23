@@ -4,8 +4,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -16,7 +19,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.devsgroup.foodmanager.core.designsystem.component.FoodAccentButton
 import com.devsgroup.foodmanager.core.designsystem.component.FoodChipTone
-import com.devsgroup.foodmanager.core.designsystem.component.FoodOutlinedButton
 import com.devsgroup.foodmanager.core.designsystem.component.FoodTagChip
 import com.devsgroup.foodmanager.core.designsystem.theme.FoodManagerTheme
 import com.devsgroup.foodmanager.core.model.DietaryTag
@@ -51,10 +53,11 @@ internal fun TasteProfileSection(
             modifier = Modifier.padding(top = 6.dp),
         )
 
+        Spacer(Modifier.height(16.dp))
+
         TasteSubsectionHeader(
             label = "ПРЕДПОЧТЕНИЯ",
             onAddClick = onAddFavoriteTagClick,
-            modifier = Modifier.padding(top = 16.dp),
         )
         if (favoriteTags.isNotEmpty()) {
             FlowRow(
@@ -68,10 +71,13 @@ internal fun TasteProfileSection(
             }
         }
 
+        HorizontalDivider(
+            modifier = Modifier.padding(vertical = 16.dp),
+        )
+
         TasteSubsectionHeader(
             label = "ИСКЛЮЧЕНИЯ",
             onAddClick = onAddAvoidTagClick,
-            modifier = Modifier.padding(top = 16.dp),
         )
         if (avoidTags.isNotEmpty()) {
             FlowRow(
@@ -92,13 +98,16 @@ internal fun TasteProfileSection(
             )
         }
 
+        HorizontalDivider(
+            modifier = Modifier.padding(vertical = 16.dp),
+        )
+
+        TasteSubsectionHeader(
+            label = "ДИЕТА",
+            onAddClick = onDietClick,
+            buttonText = if (dietTags.isNotEmpty()) "Изменить" else "Добавить",
+        )
         if (dietTags.isNotEmpty()) {
-            TasteSubsectionHeader(
-                label = "ДИЕТА",
-                onAddClick = onDietClick,
-                buttonText = "Изменить",
-                modifier = Modifier.padding(top = 16.dp),
-            )
             FlowRow(
                 modifier = Modifier.padding(top = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -110,12 +119,11 @@ internal fun TasteProfileSection(
             }
         } else {
             Text(
-                text = "ДИЕТА",
-                style = MaterialTheme.typography.labelMedium,
+                text = "Полная свобода, никаких диет",
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
+                modifier = Modifier.padding(top = 8.dp),
             )
-            FoodOutlinedButton(text = "Настроить диету →", onClick = onDietClick)
         }
     }
 }

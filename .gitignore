@@ -9,3 +9,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+/design_handoff_profile_screen/image-slot.js
+/design_handoff_profile_screen/README.md
+/design_handoff_profile_screen/support.js
