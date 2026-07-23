@@ -14,11 +14,13 @@ import com.devsgroup.foodmanager.core.network.auth.AuthApi
 import com.devsgroup.foodmanager.core.network.auth.model.AddDeviceRequest
 import com.devsgroup.foodmanager.core.network.auth.model.AddEmailRequest
 import com.devsgroup.foodmanager.core.network.auth.model.ChallengeRequest
+import com.devsgroup.foodmanager.core.network.auth.model.ConfirmLoginCodeRequest
 import com.devsgroup.foodmanager.core.network.auth.model.ConfirmRecoveryRequest
 import com.devsgroup.foodmanager.core.network.auth.model.ErrorResponse
 import com.devsgroup.foodmanager.core.network.auth.model.LogoutRequest
 import com.devsgroup.foodmanager.core.network.auth.model.RefreshRequest
 import com.devsgroup.foodmanager.core.network.auth.model.RegisterRequest
+import com.devsgroup.foodmanager.core.network.auth.model.RequestLoginCodeRequest
 import com.devsgroup.foodmanager.core.network.auth.model.RequestRecoveryRequest
 import com.devsgroup.foodmanager.core.network.auth.model.VerifyEmailCodeRequest
 import com.devsgroup.foodmanager.core.network.auth.model.VerifyRequest
@@ -157,6 +159,26 @@ class DefaultAuthRepository @Inject constructor(
         )
         authPrefs.updateTokens(response.accessToken, response.refreshToken)
         authPrefs.updateDeviceId(response.device.id)
+        response.toDomain()
+    }
+
+    override suspend fun requestLoginCode(username: String, email: String) = apiCall {
+        authApi.requestLoginCode(RequestLoginCodeRequest(username, email)).let { }
+    }
+
+    override suspend fun confirmLoginCode(
+        username: String,
+        email: String,
+        code: String,
+        newPublicKey: String,
+        deviceLabel: String?,
+    ): AuthSession = apiCall {
+        val response = authApi.confirmLoginCode(
+            ConfirmLoginCodeRequest(username, email, code, newPublicKey, deviceLabel),
+        )
+        authPrefs.updateTokens(response.accessToken, response.refreshToken)
+        authPrefs.updateDeviceId(response.device.id)
+        authPrefs.updateUsername(response.user.username)
         response.toDomain()
     }
 

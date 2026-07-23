@@ -4,6 +4,7 @@ package com.devsgroup.foodmanager.core.model
 data class UserProfile(
     val name: String,
     val username: String,
+    val email: String? = null,
     val avatarUrl: String? = null,
     val statusEmoji: String? = null,
     val age: Int? = null,

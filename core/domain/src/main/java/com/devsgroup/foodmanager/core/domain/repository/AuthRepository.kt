@@ -102,4 +102,25 @@ interface AuthRepository {
         newPublicKey: String,
         deviceLabel: String? = null,
     ): AuthSession
+
+    /**
+     * Requests a login code by [username] + [email] — the code-based counterpart to
+     * [requestRecovery], for a device with no existing key (e.g. a reinstall). Always
+     * succeeds silently (anti-enumeration); the server only emails the 6-digit code if
+     * the username has a verified email on file matching [email].
+     */
+    suspend fun requestLoginCode(username: String, email: String)
+
+    /**
+     * Confirms the emailed login code, registering [newPublicKey] as a new device and
+     * starting a session. Unlike [confirmRecovery], the returned [AuthSession.user] IS
+     * populated (the server returns `{ user, device, accessToken, refreshToken }`).
+     */
+    suspend fun confirmLoginCode(
+        username: String,
+        email: String,
+        code: String,
+        newPublicKey: String,
+        deviceLabel: String? = null,
+    ): AuthSession
 }

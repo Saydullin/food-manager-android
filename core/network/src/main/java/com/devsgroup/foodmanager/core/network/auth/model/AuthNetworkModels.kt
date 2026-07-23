@@ -55,6 +55,21 @@ data class ConfirmRecoveryRequest(
 )
 
 @Serializable
+data class RequestLoginCodeRequest(
+    val username: String,
+    val email: String,
+)
+
+@Serializable
+data class ConfirmLoginCodeRequest(
+    val username: String,
+    val email: String,
+    val code: String,
+    val newPublicKey: String,
+    val deviceLabel: String? = null,
+)
+
+@Serializable
 data class AddDeviceRequest(
     val publicKey: String,
     val deviceLabel: String? = null,

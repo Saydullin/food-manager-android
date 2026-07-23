@@ -48,8 +48,11 @@ import coil3.compose.AsyncImage
 import com.devsgroup.foodmanager.core.designsystem.R
 import com.devsgroup.foodmanager.core.designsystem.component.FoodButton
 import com.devsgroup.foodmanager.core.designsystem.component.FoodIconButton
+import com.devsgroup.foodmanager.core.designsystem.component.FoodTextButton
 import com.devsgroup.foodmanager.core.designsystem.component.FoodTextField
+import com.devsgroup.foodmanager.core.designsystem.component.FoodTextFieldCheckStatus
 import com.devsgroup.foodmanager.core.designsystem.component.FoodToggleChip
+import com.devsgroup.foodmanager.core.designsystem.component.FoodTonalButton
 import com.devsgroup.foodmanager.core.designsystem.component.FoodTopBarConfig
 import com.devsgroup.foodmanager.core.designsystem.component.LocalFoodTopBarState
 import com.devsgroup.foodmanager.core.designsystem.component.ReportFoodTopBar
@@ -82,6 +85,11 @@ internal fun EditProfileScreen(
         onAgeChange = viewModel::onAgeChange,
         onCookingAttitudeSelect = viewModel::onCookingAttitudeSelect,
         onBioChange = viewModel::onBioChange,
+        onEmailChange = viewModel::onEmailChange,
+        onSendEmailCode = viewModel::onSendEmailCode,
+        onEmailCodeChange = viewModel::onEmailCodeChange,
+        onVerifyEmailCode = viewModel::onVerifyEmailCode,
+        onResendEmailCode = viewModel::onResendEmailCode,
         onSaveClick = { viewModel.onSave(onBack) },
         modifier = modifier,
     )
@@ -99,6 +107,11 @@ private fun EditProfileContent(
     onAgeChange: (String) -> Unit,
     onCookingAttitudeSelect: (CookingAttitude) -> Unit,
     onBioChange: (String) -> Unit,
+    onEmailChange: (String) -> Unit,
+    onSendEmailCode: () -> Unit,
+    onEmailCodeChange: (String) -> Unit,
+    onVerifyEmailCode: () -> Unit,
+    onResendEmailCode: () -> Unit,
     onSaveClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -194,6 +207,15 @@ private fun EditProfileContent(
             placeholder = "Пара слов о себе",
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         )
+        Spacer(Modifier.height(18.dp))
+        EditProfileEmailSection(
+            uiState = uiState,
+            onEmailChange = onEmailChange,
+            onSendEmailCode = onSendEmailCode,
+            onEmailCodeChange = onEmailCodeChange,
+            onVerifyEmailCode = onVerifyEmailCode,
+            onResendEmailCode = onResendEmailCode,
+        )
         Spacer(Modifier.height(28.dp))
         FoodButton(
             text = if (uiState.isSaving) "Сохраняем…" else "Сохранить",
@@ -201,6 +223,103 @@ private fun EditProfileContent(
             enabled = uiState.canSave,
             modifier = Modifier.fillMaxWidth(),
         )
+    }
+}
+
+/**
+ * Email + verification block. Unlike the free-form fields above (saved together by
+ * "Сохранить"), changing the address is a two-step, server-verified action: the user
+ * enters an address and taps "Отправить код", which mails a 6-digit code
+ * ([EditProfileViewModel.onSendEmailCode]); the revealed code field then confirms it
+ * ([EditProfileViewModel.onVerifyEmailCode]). A confirmed address wears an "Available"
+ * check and hides the actions until the user edits it again.
+ */
+@Composable
+private fun EditProfileEmailSection(
+    uiState: EditProfileUiState,
+    onEmailChange: (String) -> Unit,
+    onSendEmailCode: () -> Unit,
+    onEmailCodeChange: (String) -> Unit,
+    onVerifyEmailCode: () -> Unit,
+    onResendEmailCode: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val busy = uiState.isSendingCode || uiState.isVerifyingCode
+    Column(modifier = modifier.fillMaxWidth()) {
+        FoodTextField(
+            value = uiState.email,
+            onValueChange = onEmailChange,
+            label = "ПОЧТА",
+            isRequired = false,
+            placeholder = "you@example.com",
+            description = "Понадобится, чтобы войти с нового устройства"
+                .takeIf { uiState.emailError == null && !uiState.emailVerified },
+            isError = uiState.emailError != null,
+            errorMessage = uiState.emailError,
+            checkStatus = when {
+                uiState.emailVerified -> FoodTextFieldCheckStatus.Available("Почта подтверждена")
+                uiState.isSendingCode -> FoodTextFieldCheckStatus.Checking("Отправляем код…")
+                else -> null
+            },
+            enabled = !busy,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Email,
+                imeAction = ImeAction.Done,
+            ),
+        )
+
+        AnimatedVisibility(visible = !uiState.emailVerified && !uiState.codeSent) {
+            Column {
+                Spacer(Modifier.height(12.dp))
+                FoodTonalButton(
+                    text = if (uiState.isSendingCode) "Отправляем…" else "Отправить код подтверждения",
+                    onClick = onSendEmailCode,
+                    enabled = uiState.canSendCode,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+
+        AnimatedVisibility(visible = uiState.codeSent) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Spacer(Modifier.height(16.dp))
+                uiState.emailStatus?.let { status ->
+                    Text(
+                        text = status,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
+                    )
+                }
+                FoodTextField(
+                    value = uiState.emailCode,
+                    onValueChange = onEmailCodeChange,
+                    label = "КОД ИЗ ПИСЬМА",
+                    placeholder = "123456",
+                    description = "Введите 6-значный код".takeIf { uiState.emailCodeError == null },
+                    isError = uiState.emailCodeError != null,
+                    errorMessage = uiState.emailCodeError,
+                    enabled = !uiState.isVerifyingCode,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Done,
+                    ),
+                )
+                Spacer(Modifier.height(12.dp))
+                FoodTonalButton(
+                    text = if (uiState.isVerifyingCode) "Проверяем…" else "Подтвердить почту",
+                    onClick = onVerifyEmailCode,
+                    enabled = uiState.canVerifyCode,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                FoodTextButton(
+                    text = "Отправить код ещё раз",
+                    onClick = onResendEmailCode,
+                    enabled = !uiState.isSendingCode,
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                )
+            }
+        }
     }
 }
 
@@ -343,7 +462,13 @@ private fun EditProfileScreenPreview() {
         Surface {
             CompositionLocalProvider(LocalFoodTopBarState provides remember { mutableStateOf(null) }) {
                 EditProfileContent(
-                    uiState = EditProfileUiState(username = "chef_maria", name = "Мария", statusEmoji = "🍰"),
+                    uiState = EditProfileUiState(
+                        username = "chef_maria",
+                        name = "Мария",
+                        statusEmoji = "🍰",
+                        email = "maria@example.com",
+                        emailVerified = true,
+                    ),
                     onBack = {},
                     onAvatarClick = {},
                     onDeletePhotoClick = {},
@@ -353,6 +478,11 @@ private fun EditProfileScreenPreview() {
                     onAgeChange = {},
                     onCookingAttitudeSelect = {},
                     onBioChange = {},
+                    onEmailChange = {},
+                    onSendEmailCode = {},
+                    onEmailCodeChange = {},
+                    onVerifyEmailCode = {},
+                    onResendEmailCode = {},
                     onSaveClick = {},
                 )
             }

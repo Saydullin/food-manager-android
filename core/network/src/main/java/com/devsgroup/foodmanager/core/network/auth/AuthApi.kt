@@ -4,6 +4,7 @@ import com.devsgroup.foodmanager.core.network.auth.model.AddDeviceRequest
 import com.devsgroup.foodmanager.core.network.auth.model.AddEmailRequest
 import com.devsgroup.foodmanager.core.network.auth.model.ChallengeRequest
 import com.devsgroup.foodmanager.core.network.auth.model.ChallengeResponse
+import com.devsgroup.foodmanager.core.network.auth.model.ConfirmLoginCodeRequest
 import com.devsgroup.foodmanager.core.network.auth.model.ConfirmRecoveryRequest
 import com.devsgroup.foodmanager.core.network.auth.model.DeviceDto
 import com.devsgroup.foodmanager.core.network.auth.model.LogoutRequest
@@ -11,6 +12,7 @@ import com.devsgroup.foodmanager.core.network.auth.model.MessageResponse
 import com.devsgroup.foodmanager.core.network.auth.model.RecoveryConfirmResponse
 import com.devsgroup.foodmanager.core.network.auth.model.RefreshRequest
 import com.devsgroup.foodmanager.core.network.auth.model.RegisterRequest
+import com.devsgroup.foodmanager.core.network.auth.model.RequestLoginCodeRequest
 import com.devsgroup.foodmanager.core.network.auth.model.RequestRecoveryRequest
 import com.devsgroup.foodmanager.core.network.auth.model.SessionResponse
 import com.devsgroup.foodmanager.core.network.auth.model.TokenPairResponse
@@ -80,4 +82,10 @@ interface AuthApi {
 
     @POST("auth/recovery/confirm")
     suspend fun confirmRecovery(@Body body: ConfirmRecoveryRequest): RecoveryConfirmResponse
+
+    @POST("auth/recovery/request-code")
+    suspend fun requestLoginCode(@Body body: RequestLoginCodeRequest): MessageResponse
+
+    @POST("auth/recovery/confirm-code")
+    suspend fun confirmLoginCode(@Body body: ConfirmLoginCodeRequest): SessionResponse
 }

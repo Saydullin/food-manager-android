@@ -7,7 +7,7 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
-val appVersionName = "1.0-beta.1"
+val appVersionName = "1.0-beta.2"
 
 android {
     namespace = "com.devsgroup.foodmanager"
