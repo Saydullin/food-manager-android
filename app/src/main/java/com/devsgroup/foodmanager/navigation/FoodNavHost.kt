@@ -6,6 +6,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.navOptions
+import com.devsgroup.foodmanager.feature.auth.navigation.RegistrationRoute
 import com.devsgroup.foodmanager.feature.auth.navigation.authScreens
 import com.devsgroup.foodmanager.feature.auth.navigation.navigateToLogin
 import com.devsgroup.foodmanager.feature.auth.navigation.navigateToRegistration
@@ -14,6 +15,10 @@ import com.devsgroup.foodmanager.feature.details.navigation.navigateToFoodDetail
 import com.devsgroup.foodmanager.feature.favorites.navigation.favoritesScreen
 import com.devsgroup.foodmanager.feature.onboarding.navigation.OnboardingRoute
 import com.devsgroup.foodmanager.feature.onboarding.navigation.onboardingScreen
+import com.devsgroup.foodmanager.feature.profile.navigation.editProfileScreen
+import com.devsgroup.foodmanager.feature.profile.navigation.groupDetailScreen
+import com.devsgroup.foodmanager.feature.profile.navigation.navigateToEditProfile
+import com.devsgroup.foodmanager.feature.profile.navigation.navigateToGroupDetail
 import com.devsgroup.foodmanager.feature.profile.navigation.profileScreen
 import com.devsgroup.foodmanager.feature.recommendations.navigation.RecommendationsRoute
 import com.devsgroup.foodmanager.feature.recommendations.navigation.recommendationsScreen
@@ -61,7 +66,19 @@ fun FoodNavHost(
         )
         recommendationsScreen(onFoodClick = { foodId -> navController.navigateToFoodDetails(foodId) })
         favoritesScreen(onFoodClick = { foodId -> navController.navigateToFoodDetails(foodId) })
-        profileScreen()
+        profileScreen(
+            onNavigateToEditProfile = { navController.navigateToEditProfile() },
+            onNavigateToGroupDetail = { groupId -> navController.navigateToGroupDetail(groupId) },
+            onLoggedOut = {
+                navController.navigate(RegistrationRoute) {
+                    // Clear the whole back stack so Back never returns into the signed-out app.
+                    popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
+                    launchSingleTop = true
+                }
+            },
+        )
+        editProfileScreen(onBack = { navController.navigateUp() })
+        groupDetailScreen(onBack = { navController.navigateUp() })
         foodDetailsScreen(onBack = { navController.navigateUp() })
     }
 }

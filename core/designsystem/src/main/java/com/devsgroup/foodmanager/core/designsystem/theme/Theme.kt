@@ -1,5 +1,6 @@
 package com.devsgroup.foodmanager.core.designsystem.theme
 
+import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -8,7 +9,10 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 
 // The hero look from the design: warm near-black surface, three descending accents.
 private val DarkColorScheme = darkColorScheme(
@@ -108,6 +112,20 @@ fun FoodManagerTheme(
 
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
+    }
+
+    // enableEdgeToEdge() only sets the status/navigation bar icon color once, from the
+    // system theme at launch. darkTheme here is a user preference independent of the
+    // system setting, so it has to be re-applied on every change or the bar icons can end
+    // up the wrong color for the resolved theme (e.g. dark icons on a dark background).
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (view.context as Activity).window
+            val insetsController = WindowCompat.getInsetsController(window, view)
+            insetsController.isAppearanceLightStatusBars = !darkTheme
+            insetsController.isAppearanceLightNavigationBars = !darkTheme
+        }
     }
 
     MaterialTheme(

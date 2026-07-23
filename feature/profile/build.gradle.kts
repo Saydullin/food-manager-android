@@ -34,6 +34,7 @@ dependencies {
     implementation(libs.bundles.compose)
     implementation(libs.bundles.lifecycle.compose)
     implementation(libs.bundles.coil)
+    implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.hilt.navigation.compose)
 

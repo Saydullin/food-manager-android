@@ -4,7 +4,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.devsgroup.foodmanager.core.designsystem.theme.FoodManagerTheme
 import com.devsgroup.foodmanager.ui.FoodApp
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -13,10 +12,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // FoodApp applies FoodManagerTheme itself, driven by the user's theme preference.
         setContent {
-            FoodManagerTheme {
-                FoodApp()
-            }
+            FoodApp()
         }
     }
 }

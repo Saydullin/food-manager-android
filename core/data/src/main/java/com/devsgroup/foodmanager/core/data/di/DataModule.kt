@@ -3,10 +3,18 @@ package com.devsgroup.foodmanager.core.data.di
 import com.devsgroup.foodmanager.core.data.crypto.AndroidKeystoreDeviceKeyRepository
 import com.devsgroup.foodmanager.core.data.repository.DefaultAuthRepository
 import com.devsgroup.foodmanager.core.data.repository.DefaultFoodRepository
+import com.devsgroup.foodmanager.core.data.repository.DefaultGroupRepository
+import com.devsgroup.foodmanager.core.data.repository.DefaultProfileRepository
+import com.devsgroup.foodmanager.core.data.repository.DefaultRecipeRepository
+import com.devsgroup.foodmanager.core.data.repository.DefaultSettingsRepository
 import com.devsgroup.foodmanager.core.data.repository.DefaultTasteProfileRepository
 import com.devsgroup.foodmanager.core.domain.repository.AuthRepository
 import com.devsgroup.foodmanager.core.domain.repository.DeviceKeyRepository
 import com.devsgroup.foodmanager.core.domain.repository.FoodRepository
+import com.devsgroup.foodmanager.core.domain.repository.GroupRepository
+import com.devsgroup.foodmanager.core.domain.repository.ProfileRepository
+import com.devsgroup.foodmanager.core.domain.repository.RecipeRepository
+import com.devsgroup.foodmanager.core.domain.repository.SettingsRepository
 import com.devsgroup.foodmanager.core.domain.repository.TasteProfileRepository
 import dagger.Binds
 import dagger.Module
@@ -34,4 +42,20 @@ abstract class DataModule {
     @Binds
     @Singleton
     abstract fun bindsDeviceKeyRepository(impl: AndroidKeystoreDeviceKeyRepository): DeviceKeyRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindsProfileRepository(impl: DefaultProfileRepository): ProfileRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindsGroupRepository(impl: DefaultGroupRepository): GroupRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindsRecipeRepository(impl: DefaultRecipeRepository): RecipeRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindsSettingsRepository(impl: DefaultSettingsRepository): SettingsRepository
 }

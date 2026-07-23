@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ElevatedButton
@@ -22,11 +23,13 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.devsgroup.foodmanager.core.designsystem.R
 import com.devsgroup.foodmanager.core.designsystem.theme.FoodManagerTheme
@@ -48,6 +51,8 @@ import com.devsgroup.foodmanager.core.designsystem.theme.FoodManagerTheme
  * Emphasis ladder, high → low. Reach for the lowest emphasis that still reads:
  *  - [FoodButton]         filled, brand orange — the one primary action on a screen.
  *  - [FoodTonalButton]    softer fill — a secondary action sitting next to the primary.
+ *  - [FoodAccentButton]   pill-shaped, soft orange tint — inline "add" actions
+ *                         ("＋ Добавить") that sit beside a section heading, not a form.
  *  - [FoodElevatedButton] filled + shadow — when a button floats over busy content.
  *  - [FoodOutlinedButton] outline only — secondary action on a plain surface.
  *  - [FoodTextButton]     no container — lowest emphasis (dialogs, "Skip", inline links).
@@ -102,6 +107,46 @@ fun FoodTonalButton(
             text = text,
             style = MaterialTheme.typography.titleSmall,
             leadingIcon = leadingIcon,
+        )
+    }
+}
+
+/**
+ * Pill-shaped inline action with a soft orange tint — "＋ Добавить" beside a section
+ * label, "＋ Создать" beside "Группы". Lower-profile than [FoodTonalButton] (which fills
+ * with the M3 secondary/tertiary tonal roles): this one tints [MaterialTheme.colorScheme]'s
+ * `primary` at low alpha, so it reads as an accent hint rather than a filled control.
+ *
+ * [compact] shrinks the vertical padding for tight inline headers (a subsection label
+ * row) where the regular size reads as too tall next to a small `labelMedium` heading.
+ */
+@Composable
+fun FoodAccentButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    compact: Boolean = false,
+) {
+    val accent = MaterialTheme.colorScheme.primary
+    Button(
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        shape = CircleShape,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = accent.copy(alpha = 0.14f),
+            contentColor = accent,
+            disabledContainerColor = accent.copy(alpha = 0.06f),
+            disabledContentColor = accent.copy(alpha = 0.38f),
+        ),
+        elevation = null,
+    ) {
+        ButtonContent(
+            text = text,
+            style = MaterialTheme.typography.titleSmall,
+            leadingIcon = null,
+            verticalPadding = if (compact) 6.dp else 12.dp,
         )
     }
 }
@@ -162,6 +207,7 @@ fun FoodTextButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     leadingIcon: Painter? = null,
+    compact: Boolean = false,
 ) {
     TextButton(
         onClick = onClick,
@@ -173,6 +219,7 @@ fun FoodTextButton(
             text = text,
             style = MaterialTheme.typography.titleSmall,
             leadingIcon = leadingIcon,
+            verticalPadding = if (compact) 6.dp else 12.dp,
         )
     }
 }
@@ -188,6 +235,9 @@ fun FoodTextButton(
  * Unlike the decorative [leadingIcon] on the labelled buttons, [contentDescription]
  * is **required**: with no visible text it is the only thing a screen reader can
  * announce for this control. Pass a short verb phrase (e.g. "Закрыть").
+ *
+ * [tint] overrides the icon's color — e.g. the error color for a destructive action
+ * (a group row's trash icon) — and otherwise follows the surrounding content color.
  */
 @Composable
 fun FoodIconButton(
@@ -196,6 +246,7 @@ fun FoodIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    tint: Color = Color.Unspecified,
 ) {
     IconButton(
         onClick = onClick,
@@ -205,6 +256,7 @@ fun FoodIconButton(
         Icon(
             painter = icon,
             contentDescription = contentDescription,
+            tint = tint,
         )
     }
 }
@@ -225,10 +277,11 @@ private fun ButtonContent(
     text: String,
     style: TextStyle = LocalTextStyle.current,
     leadingIcon: Painter?,
+    verticalPadding: Dp = 12.dp,
 ) {
     Row(
         modifier = Modifier
-            .padding(vertical = 12.dp),
+            .padding(vertical = verticalPadding),
         horizontalArrangement = Arrangement.spacedBy(
             ButtonDefaults.IconSpacing,
             Alignment.CenterHorizontally,
@@ -279,6 +332,8 @@ private fun FoodButtonsPreview() {
                     onClick = {},
                     leadingIcon = painterResource(R.drawable.ic_favorite),
                 )
+                FoodAccentButton(text = "＋ Добавить", onClick = {})
+                FoodAccentButton(text = "Добавить", onClick = {}, compact = true)
                 FoodElevatedButton(text = "Поделиться", onClick = {})
                 FoodOutlinedButton(text = "Не то", onClick = {})
                 FoodTextButton(text = "Пропустить", onClick = {})

@@ -89,11 +89,11 @@ class RecommendationsViewModel @Inject constructor(
         advance(RecommendationVerdict.SAVED)
     }
 
-    /** Move to the next card in the deck, recording [verdict]. Clamped past the end. */
+    /** Move to the next card in the deck, recording [verdict]. Wraps to the start once the deck is exhausted. */
     private fun advance(verdict: RecommendationVerdict) {
         _uiState.update { state ->
             state.copy(
-                currentIndex = (state.currentIndex + 1).coerceAtMost(state.cards.size),
+                currentIndex = (state.currentIndex + 1) % state.cards.size,
                 lastVerdict = verdict,
             )
         }

@@ -21,4 +21,7 @@ interface FoodRepository {
 
     /** Persists a swipe and lets the recommender learn from it. */
     suspend fun recordSwipe(foodId: String, action: SwipeAction)
+
+    /** Removes a food from [likedFoods] (the profile screen's "✕" on a liked dish). */
+    suspend fun unlikeFood(foodId: String)
 }

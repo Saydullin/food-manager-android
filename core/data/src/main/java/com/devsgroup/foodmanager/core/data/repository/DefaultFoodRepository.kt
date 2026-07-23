@@ -26,4 +26,8 @@ class DefaultFoodRepository @Inject constructor(
     override suspend fun recordSwipe(foodId: String, action: SwipeAction) {
         // TODO: persist locally, then enqueue remote sync.
     }
+
+    override suspend fun unlikeFood(foodId: String) {
+        // TODO: persist locally once liked foods are backed by Room.
+    }
 }
