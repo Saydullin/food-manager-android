@@ -78,6 +78,7 @@ class DefaultAuthRepository @Inject constructor(
         )
         authPrefs.updateTokens(response.accessToken, response.refreshToken)
         authPrefs.updateDeviceId(response.device.id)
+        authPrefs.updateUsername(response.user.username)
         response.toDomain()
     }
 

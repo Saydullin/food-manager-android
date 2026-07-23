@@ -27,7 +27,7 @@ internal fun DietSheet(
     FoodModalBottomSheet(onDismissRequest = onDismiss, modifier = modifier) {
         Text(text = "Диета и аллергии", style = MaterialTheme.typography.headlineSmall)
         Text(
-            text = "Учтём при подборе блюд — можно выбрать несколько",
+            text = "Учтём при подборе блюд",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 5.dp, bottom = 16.dp),

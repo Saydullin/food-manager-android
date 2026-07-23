@@ -47,7 +47,7 @@ internal fun TasteProfileSection(
             color = MaterialTheme.colorScheme.onBackground,
         )
         Text(
-            text = "Учли по вашим оценкам блюд — можно править вручную.",
+            text = "Учли по вашим оценкам блюд",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 6.dp),

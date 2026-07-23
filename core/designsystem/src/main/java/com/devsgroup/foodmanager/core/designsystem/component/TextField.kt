@@ -249,7 +249,7 @@ private fun FoodTextFieldPreview() {
                     value = "ada",
                     onValueChange = {},
                     label = "НИКНЕЙМ",
-                    checkStatus = FoodTextFieldCheckStatus.Available("Свободен — можно занять"),
+                    checkStatus = FoodTextFieldCheckStatus.Available("Свободен, можно занять"),
                 )
             }
         }

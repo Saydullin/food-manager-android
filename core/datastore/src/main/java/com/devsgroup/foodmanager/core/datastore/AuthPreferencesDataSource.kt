@@ -43,6 +43,15 @@ class AuthPreferencesDataSource @Inject constructor(
         .catch { e -> if (e is IOException) emit(emptyPreferences()) else throw e }
         .map { it[DEVICE_ID] }
 
+    /**
+     * The registered account's username, set by [register] so the profile screen can
+     * default to it. Survives [clear], mirroring [deviceIdFlow] — it identifies the
+     * account on this device rather than the session.
+     */
+    val usernameFlow: Flow<String?> = dataStore.data
+        .catch { e -> if (e is IOException) emit(emptyPreferences()) else throw e }
+        .map { it[USERNAME] }
+
     suspend fun updateTokens(accessToken: String, refreshToken: String) {
         dataStore.edit {
             it[ACCESS_TOKEN] = accessToken
@@ -52,6 +61,10 @@ class AuthPreferencesDataSource @Inject constructor(
 
     suspend fun updateDeviceId(deviceId: String) {
         dataStore.edit { it[DEVICE_ID] = deviceId }
+    }
+
+    suspend fun updateUsername(username: String) {
+        dataStore.edit { it[USERNAME] = username }
     }
 
     /** Clears the session — call on logout. */
@@ -75,5 +88,6 @@ class AuthPreferencesDataSource @Inject constructor(
         val ACCESS_TOKEN = stringPreferencesKey("auth_access_token")
         val REFRESH_TOKEN = stringPreferencesKey("auth_refresh_token")
         val DEVICE_ID = stringPreferencesKey("auth_device_id")
+        val USERNAME = stringPreferencesKey("auth_username")
     }
 }
