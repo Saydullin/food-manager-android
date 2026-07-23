@@ -2,12 +2,12 @@
 
 **[Русский](README.ru.md) | English**
 
-A "Tinder for food" Android app — swipe through dishes to build a taste profile, then get personalized food recommendations based on what you liked.
+A food discovery app — build a taste profile from the dishes you like, then get personalized food recommendations.
 
 ## Features
 
-- **Swipe deck** — discover dishes one at a time with a Tinder-style swipe interface
-- **Personalized recommendations** — a "For You" feed built from your swipe history
+- **Discover deck** — browse dishes one at a time and mark what you like
+- **Personalized recommendations** — a "For You" feed built from your taste profile
 - **Favorites** — save and revisit dishes you liked
 - **Onboarding** — capture initial taste preferences for new users
 - **Device-key authentication** — frictionless login without passwords
@@ -50,7 +50,7 @@ core/
 feature/
 ├── auth                   — registration + login (device-key auth)
 ├── onboarding              — capture initial taste preferences
-├── discover                — the swipe deck ("Tinder for food")
+├── discover                — the discover deck
 ├── recommendations         — personalized "For You" feed
 ├── favorites                — liked / saved foods
 ├── details                 — food detail screen (shared destination)
