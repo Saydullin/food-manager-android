@@ -26,7 +26,7 @@ fun FoodCard(
 ) {
     Card(modifier = modifier.fillMaxWidth()) {
         AsyncImage(
-            model = food.imageUrl,
+            model = food.images.firstOrNull(),
             contentDescription = food.name,
             contentScale = ContentScale.Crop,
             modifier = Modifier
@@ -36,7 +36,7 @@ fun FoodCard(
         Column(modifier = Modifier.padding(16.dp)) {
             Text(text = food.name, style = MaterialTheme.typography.titleLarge)
             Text(
-                text = food.description,
+                text = food.description.orEmpty(),
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(top = 4.dp),
             )

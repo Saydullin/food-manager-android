@@ -19,8 +19,8 @@ import androidx.compose.ui.unit.dp
 import com.devsgroup.foodmanager.core.designsystem.R
 import com.devsgroup.foodmanager.core.designsystem.component.FoodIconButton
 import com.devsgroup.foodmanager.core.designsystem.theme.FoodManagerTheme
-import com.devsgroup.foodmanager.core.model.Cuisine
 import com.devsgroup.foodmanager.core.model.Food
+import com.devsgroup.foodmanager.core.model.FoodTags
 
 /** "Понравившееся" — dishes liked from "Для вас", with a quick "✕" to unlike. */
 @Composable
@@ -67,11 +67,11 @@ private fun LikedDishRow(food: Food, onUnlike: () -> Unit, modifier: Modifier = 
             horizontalArrangement = Arrangement.spacedBy(13.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            PhotoTile(imageUrl = food.imageUrl, modifier = Modifier.size(56.dp))
+            PhotoTile(imageUrl = food.images.firstOrNull().orEmpty(), modifier = Modifier.size(56.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = food.name, style = MaterialTheme.typography.titleMedium)
                 Text(
-                    text = food.cuisine.label,
+                    text = food.cuisine?.let(::cuisineLabel) ?: "Разное",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 6.dp),
@@ -87,19 +87,19 @@ private fun LikedDishRow(food: Food, onUnlike: () -> Unit, modifier: Modifier = 
     }
 }
 
-private val Cuisine.label: String
-    get() = when (this) {
-        Cuisine.ITALIAN -> "Итальянская"
-        Cuisine.JAPANESE -> "Японская"
-        Cuisine.MEXICAN -> "Мексиканская"
-        Cuisine.INDIAN -> "Индийская"
-        Cuisine.CHINESE -> "Китайская"
-        Cuisine.MEDITERRANEAN -> "Средиземноморская"
-        Cuisine.AMERICAN -> "Американская"
-        Cuisine.THAI -> "Тайская"
-        Cuisine.FRENCH -> "Французская"
-        Cuisine.OTHER -> "Разное"
-    }
+/** Localizes a server cuisine code; unknown/new codes fall back to the raw code. */
+private fun cuisineLabel(code: String): String = when (code) {
+    "ITALIAN" -> "Итальянская"
+    "JAPANESE" -> "Японская"
+    "MEXICAN" -> "Мексиканская"
+    "INDIAN" -> "Индийская"
+    "CHINESE" -> "Китайская"
+    "MEDITERRANEAN" -> "Средиземноморская"
+    "AMERICAN" -> "Американская"
+    "THAI" -> "Тайская"
+    "FRENCH" -> "Французская"
+    else -> code
+}
 
 @Preview
 @Composable
@@ -112,9 +112,12 @@ private fun LikedDishesSectionPreview() {
                         id = "1",
                         name = "Том Ям",
                         description = "",
-                        imageUrl = "",
-                        cuisine = Cuisine.THAI,
-                        dietaryTags = emptySet(),
+                        cuisine = "THAI",
+                        images = emptyList(),
+                        nutrition = null,
+                        tags = FoodTags(),
+                        createdAt = "",
+                        updatedAt = "",
                     ),
                 ),
                 onUnlike = {},

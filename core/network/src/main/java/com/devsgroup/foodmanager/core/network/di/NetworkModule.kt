@@ -3,6 +3,7 @@ package com.devsgroup.foodmanager.core.network.di
 import android.util.Log
 import com.devsgroup.foodmanager.core.network.NetworkConfig
 import com.devsgroup.foodmanager.core.network.auth.AuthApi
+import com.devsgroup.foodmanager.core.network.food.FoodApi
 import com.devsgroup.foodmanager.core.network.interceptor.AuthInterceptor
 import com.devsgroup.foodmanager.core.network.interceptor.TokenRefreshAuthenticator
 import com.devsgroup.foodmanager.core.network.profile.ProfileApi
@@ -101,6 +102,10 @@ object NetworkModule {
     @Provides
     @Singleton
     fun providesUploadApi(retrofit: Retrofit): UploadApi = retrofit.create(UploadApi::class.java)
+
+    @Provides
+    @Singleton
+    fun providesFoodApi(retrofit: Retrofit): FoodApi = retrofit.create(FoodApi::class.java)
 
     @Provides
     @Singleton

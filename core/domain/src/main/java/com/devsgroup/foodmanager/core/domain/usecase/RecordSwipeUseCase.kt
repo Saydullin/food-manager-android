@@ -8,6 +8,6 @@ import javax.inject.Inject
 class RecordSwipeUseCase @Inject constructor(
     private val foodRepository: FoodRepository,
 ) {
-    suspend operator fun invoke(foodId: String, action: SwipeAction) =
-        foodRepository.recordSwipe(foodId, action)
+    suspend operator fun invoke(foodId: String, action: SwipeAction, reason: String? = null, reasonDetail: String? = null) =
+        foodRepository.recordSwipe(foodId, action, reason, reasonDetail)
 }

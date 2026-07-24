@@ -1,0 +1,81 @@
+package com.devsgroup.foodmanager.core.network.food.model
+
+import kotlinx.serialization.Serializable
+
+/**
+ * Wire models for the food feed & swipe API. Field names match the server JSON
+ * one-to-one (camelCase), so no @SerialName is needed. Optional fields default to
+ * null/empty; the shared [kotlinx.serialization.json.Json] is configured with
+ * `explicitNulls = false`, so null request fields are simply omitted.
+ */
+
+// ---- Requests ---------------------------------------------------------------
+
+@Serializable
+data class InteractionRequestDto(
+    val action: String,
+    val reason: String? = null,
+    val reasonDetail: String? = null,
+)
+
+// ---- Responses --------------------------------------------------------------
+
+@Serializable
+data class NutritionDto(
+    val calories: Int? = null,
+    val servings: Int? = null,
+    val protein: Int? = null,
+    val fat: Int? = null,
+    val carbs: Int? = null,
+)
+
+@Serializable
+data class FoodTagsDto(
+    val allergens: List<String> = emptyList(),
+    val dietaryRestrictions: List<String> = emptyList(),
+    val intolerances: List<String> = emptyList(),
+    val features: List<String> = emptyList(),
+    val diets: List<String> = emptyList(),
+)
+
+/** A dish, fully shaped: same payload for feed items and single-detail lookups. */
+@Serializable
+data class FoodDto(
+    val id: String,
+    val name: String,
+    val description: String? = null,
+    val cuisine: String? = null,
+    val images: List<String> = emptyList(),
+    val nutrition: NutritionDto? = null,
+    val tags: FoodTagsDto = FoodTagsDto(),
+    val createdAt: String,
+    val updatedAt: String,
+)
+
+/** GET /foods/feed — keyset (cursor) paginated. */
+@Serializable
+data class FeedResponseDto(
+    val items: List<FoodDto>,
+    val nextCursor: String? = null,
+    val hasMore: Boolean,
+)
+
+@Serializable
+data class FoodDetailResponseDto(val food: FoodDto)
+
+@Serializable
+data class InteractionDto(
+    val foodId: String,
+    val action: String,
+    val reason: String? = null,
+    val reasonDetail: String? = null,
+    val createdAt: String,
+    val updatedAt: String,
+)
+
+@Serializable
+data class InteractionResponseDto(val interaction: InteractionDto)
+
+/** DELETE /foods/:foodId/interactions — idempotent undo, never 404s. */
+@Serializable
+data class DeleteInteractionResponseDto(val removed: Boolean)

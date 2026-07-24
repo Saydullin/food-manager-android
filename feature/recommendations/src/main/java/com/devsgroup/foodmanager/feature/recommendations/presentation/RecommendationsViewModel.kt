@@ -1,21 +1,28 @@
 package com.devsgroup.foodmanager.feature.recommendations.presentation
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.devsgroup.foodmanager.core.domain.usecase.GetRecommendedFoodsUseCase
+import com.devsgroup.foodmanager.core.domain.usecase.LoadNextFeedPageUseCase
+import com.devsgroup.foodmanager.core.domain.usecase.RecordSwipeUseCase
+import com.devsgroup.foodmanager.core.model.Food
+import com.devsgroup.foodmanager.core.model.SwipeAction
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
  * One dish in the recommendations deck, shaped for the [RecommendationCard] overlay.
  *
- * This is a *presentation* model, not the domain [com.devsgroup.foodmanager.core.model.Food]:
- * it carries exactly the display-ready strings the card paints (already-formatted
- * badges like "480 ккал", human categories, etc.). When the real feed arrives, the
- * server DTO → domain `Food` → this model mapping lands in the data/domain layers and
- * the UI below does not change.
+ * This is a *presentation* model, not the domain [Food]: it carries exactly the
+ * display-ready strings the card paints (already-formatted badges like "480 ккал",
+ * human categories, etc.). [cuisineCode] is the one exception — carried un-displayed
+ * so a "wrong cuisine" dislike can report the dish's own cuisine back to the server.
  */
 data class RecommendationUiModel(
     val id: String,
@@ -28,6 +35,8 @@ data class RecommendationUiModel(
     val categories: List<String> = emptyList(),
     /** Optional personalization hint shown under the card ("Советуем: …"). */
     val tip: String? = null,
+    /** The raw server cuisine code (e.g. `"THAI"`), for the "wrong cuisine" dislike reason. */
+    val cuisineCode: String? = null,
 )
 
 /**
@@ -39,26 +48,45 @@ enum class RecommendationVerdict { SAVED, SKIPPED, DISLIKED }
 
 data class RecommendationsUiState(
     val screenTitle: String = "For You",
-    /** The recommendation deck, ordered by match score. */
+    /** The cached feed, newest-first — shrinks as each swipe is confirmed by the server. */
     val cards: List<RecommendationUiModel> = emptyList(),
-    /** Index of the card currently on top of the deck. */
-    val currentIndex: Int = 0,
+    /** Whether another page can still be fetched once [cards] runs low. */
+    val hasMore: Boolean = true,
     /** How the deck last advanced — `null` before the first action. */
     val lastVerdict: RecommendationVerdict? = null,
     /** Whether the "Не люблю" reason sheet is currently shown. */
     val showDislikeSheet: Boolean = false,
 ) {
-    /** The card on top of the deck, or `null` once every card has been reviewed. */
-    val currentCard: RecommendationUiModel? get() = cards.getOrNull(currentIndex)
+    /** The card on top of the deck, or `null` while empty (still loading, or truly exhausted). */
+    val currentCard: RecommendationUiModel? get() = cards.firstOrNull()
+
+    /** True once every dish has been swiped and the server has no more pages left. */
+    val isExhausted: Boolean get() = cards.isEmpty() && !hasMore
 }
+
+/** Once the deck drops below this many cards, fetch another page to keep it stocked. */
+private const val PrefetchThreshold = 5
 
 @HiltViewModel
 class RecommendationsViewModel @Inject constructor(
-    // TODO: inject GetRecommendedFoodsUseCase and map its FoodRecommendation stream
-    //  into `cards` instead of the sample deck below.
+    private val getRecommendedFoodsUseCase: GetRecommendedFoodsUseCase,
+    private val loadNextFeedPageUseCase: LoadNextFeedPageUseCase,
+    private val recordSwipeUseCase: RecordSwipeUseCase,
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(RecommendationsUiState(cards = SampleDeck))
+    private val _uiState = MutableStateFlow(RecommendationsUiState())
     val uiState: StateFlow<RecommendationsUiState> = _uiState.asStateFlow()
+
+    private var isLoadingPage = false
+
+    init {
+        viewModelScope.launch {
+            getRecommendedFoodsUseCase().collect { foods ->
+                val cards = foods.map { it.toUiModel() }
+                _uiState.update { it.copy(cards = cards) }
+                maybeLoadMore(cards.size)
+            }
+        }
+    }
 
     /** "Не люблю" — open the reason sheet so we can record a *precise* dislike. */
     fun onDislike() {
@@ -67,9 +95,10 @@ class RecommendationsViewModel @Inject constructor(
 
     /** A reason was chosen in the sheet: record the negative signal, close it, advance. */
     fun onDislikeReasonSelected(reason: DislikeReason) {
-        // TODO: record the dislike + reason via the personalization use-case.
-        _uiState.update { it.copy(showDislikeSheet = false) }
-        advance(RecommendationVerdict.DISLIKED)
+        val card = uiState.value.currentCard ?: return
+        _uiState.update { it.copy(showDislikeSheet = false, lastVerdict = RecommendationVerdict.DISLIKED) }
+        val (reasonCode, reasonDetail) = reason.toBackendReason(card)
+        recordSwipe(card.id, SwipeAction.DISLIKE, reasonCode, reasonDetail)
     }
 
     /** Sheet dismissed without a choice (scrim tap, swipe-down, or back). */
@@ -79,73 +108,79 @@ class RecommendationsViewModel @Inject constructor(
 
     /** "Пропустить" — skip the current card without recording a preference, then advance. */
     fun onReject() {
-        // TODO: optionally record a "skip" signal before advancing.
-        advance(RecommendationVerdict.SKIPPED)
+        val card = uiState.value.currentCard ?: return
+        _uiState.update { it.copy(lastVerdict = RecommendationVerdict.SKIPPED) }
+        recordSwipe(card.id, SwipeAction.SKIP)
     }
 
     /** "Сохранить" — save the current food to favorites, then advance. */
     fun onAddToCart() {
-        // TODO: save the current food via the cart/favorites use-case.
-        advance(RecommendationVerdict.SAVED)
+        val card = uiState.value.currentCard ?: return
+        _uiState.update { it.copy(lastVerdict = RecommendationVerdict.SAVED) }
+        recordSwipe(card.id, SwipeAction.LIKE)
     }
 
-    /** Move to the next card in the deck, recording [verdict]. Wraps to the start once the deck is exhausted. */
-    private fun advance(verdict: RecommendationVerdict) {
-        _uiState.update { state ->
-            state.copy(
-                currentIndex = (state.currentIndex + 1) % state.cards.size,
-                lastVerdict = verdict,
-            )
+    /**
+     * Records the swipe on the server; the card only disappears once that succeeds,
+     * since the repository only clears a dish from the cache after the API call goes
+     * through. The deck's [RecommendationsUiState.cards] Flow then re-emits without
+     * it — no manual "advance" needed.
+     */
+    private fun recordSwipe(foodId: String, action: SwipeAction, reason: String? = null, reasonDetail: String? = null) {
+        viewModelScope.launch {
+            runCatching { recordSwipeUseCase(foodId, action, reason, reasonDetail) }
+                .onFailure { Log.e(TAG, "Failed to record swipe for $foodId", it) }
         }
+    }
+
+    /** Keeps the deck stocked by fetching another page once it runs low. */
+    private fun maybeLoadMore(currentSize: Int) {
+        val state = uiState.value
+        if (isLoadingPage || !state.hasMore || currentSize >= PrefetchThreshold) return
+        isLoadingPage = true
+        viewModelScope.launch {
+            val hasMore = runCatching { loadNextFeedPageUseCase() }
+                .onFailure { Log.e(TAG, "Failed to load next feed page", it) }
+                .getOrDefault(state.hasMore)
+            _uiState.update { it.copy(hasMore = hasMore) }
+            isLoadingPage = false
+        }
+    }
+
+    private companion object {
+        const val TAG = "RecommendationsViewModel"
     }
 }
 
-/**
- * Stand-in deck used until the personalized feed is wired in. Photos are loaded from
- * the network by Coil, so the images match the categories/titles below.
- */
-private val SampleDeck = listOf(
-    RecommendationUiModel(
-        id = "tom-yum",
-        imageUrl = "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=900&q=80",
-        title = "Том Ям с креветками",
-        description = "Острый тайский суп на кокосовом молоке с креветками, грибами и лемонграссом.",
-        badges = listOf("480 ккал", "Остро"),
-        categories = listOf("Острое", "Тайская"),
-        tip = "Советуем: вы часто лайкаете острое",
-    ),
-    RecommendationUiModel(
-        id = "pepperoni",
-        imageUrl = "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=900&q=80",
-        title = "Пицца Пепперони",
-        description = "Тонкое тесто, томатный соус, моцарелла и острые колбаски пепперони.",
-        badges = listOf("720 ккал"),
-        categories = listOf("Классика", "Итальянская"),
-    ),
-    RecommendationUiModel(
-        id = "ramen",
-        imageUrl = "https://images.unsplash.com/photo-1557872943-16a5ac26437e?auto=format&fit=crop&w=900&q=80",
-        title = "Рамен Тонкоцу",
-        description = "Наваристый бульон, тонкая лапша, свинина чашу и маринованное яйцо.",
-        badges = listOf("560 ккал"),
-        categories = listOf("Сытное", "Японская"),
-        tip = "Топ выбор на этой неделе",
-    ),
-    RecommendationUiModel(
-        id = "cheeseburger",
-        imageUrl = "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=900&q=80",
-        title = "Чизбургер Дабл",
-        description = "Две говяжьи котлеты, чеддер, маринованные огурцы и фирменный соус.",
-        badges = listOf("810 ккал"),
-        categories = listOf("Стрит-фуд", "Американская"),
-    ),
-    RecommendationUiModel(
-        id = "greek-salad",
-        imageUrl = "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?auto=format&fit=crop&w=900&q=80",
-        title = "Греческий салат",
-        description = "Свежие овощи, оливки и фета с оливковым маслом и орегано.",
-        badges = listOf("320 ккал", "Вег"),
-        categories = listOf("Лёгкое", "Средиземноморская"),
-        tip = "Лёгкий вариант для обеда",
-    ),
+/** Maps a [DislikeReason] to the server's `(reason, reasonDetail)` codes for this [card]. */
+private fun DislikeReason.toBackendReason(card: RecommendationUiModel): Pair<String, String?> = when (this) {
+    DislikeReason.TooSpicy -> "DISLIKE_TAG" to "SPICY"
+    // "Wrong cuisine" naturally means *this dish's* cuisine; fall back to OTHER if it has none.
+    DislikeReason.Cuisine -> if (card.cuisineCode != null) "WRONG_CUISINE" to card.cuisineCode else "OTHER" to null
+    DislikeReason.AlreadyTried -> "ALREADY_ATE" to null
+    DislikeReason.Ingredients, DislikeReason.Other -> "OTHER" to null
+}
+
+private fun Food.toUiModel(): RecommendationUiModel = RecommendationUiModel(
+    id = id,
+    imageUrl = images.firstOrNull().orEmpty(),
+    title = name,
+    description = description.orEmpty(),
+    badges = listOfNotNull(nutrition?.calories?.let { "$it ккал" }),
+    categories = listOfNotNull(cuisine?.let(::cuisineLabel)),
+    cuisineCode = cuisine,
 )
+
+/** Localizes a server cuisine code; unknown/new codes fall back to the raw code. */
+private fun cuisineLabel(code: String): String = when (code) {
+    "ITALIAN" -> "Итальянская"
+    "JAPANESE" -> "Японская"
+    "MEXICAN" -> "Мексиканская"
+    "INDIAN" -> "Индийская"
+    "CHINESE" -> "Китайская"
+    "MEDITERRANEAN" -> "Средиземноморская"
+    "AMERICAN" -> "Американская"
+    "THAI" -> "Тайская"
+    "FRENCH" -> "Французская"
+    else -> code
+}

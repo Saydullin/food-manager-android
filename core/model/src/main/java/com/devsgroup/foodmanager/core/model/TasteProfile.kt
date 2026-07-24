@@ -12,16 +12,9 @@ data class TasteProfile(
     val dietaryTags: Set<DietaryTag> = emptySet(),
 )
 
-/** The user's reaction to a food card in the discovery deck. */
+/** The user's reaction to a food card in the discovery deck; matches the server's verdicts exactly. */
 enum class SwipeAction {
     LIKE,
+    SKIP,
     DISLIKE,
-    SUPER_LIKE,
 }
-
-/** A food paired with the confidence that the user will like it. */
-data class FoodRecommendation(
-    val food: Food,
-    /** 0.0..1.0 match score derived from the [TasteProfile]. */
-    val matchScore: Float,
-)

@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -77,9 +78,12 @@ internal fun RecommendationsScreen(
                         )
                     }
                 }
-            } else {
-                // The deck is exhausted — every card has been reviewed.
+            } else if (uiState.isExhausted) {
+                // Every dish has been reviewed and the server has no more pages left.
                 EmptyDeck(modifier = Modifier.fillMaxSize())
+            } else {
+                // The deck is momentarily empty while the first/next page is fetched.
+                LoadingDeck(modifier = Modifier.fillMaxSize())
             }
         }
 
@@ -173,6 +177,14 @@ private fun RecommendationTip(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+    }
+}
+
+/** Shown while the first page (or a refill page) of the feed is still loading. */
+@Composable
+private fun LoadingDeck(modifier: Modifier = Modifier) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
     }
 }
 
