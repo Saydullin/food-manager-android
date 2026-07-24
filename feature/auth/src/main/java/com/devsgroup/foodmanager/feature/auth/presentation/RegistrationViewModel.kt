@@ -23,8 +23,10 @@ import kotlin.time.Duration.Companion.milliseconds
 enum class UsernameAvailability { UNKNOWN, CHECKING, AVAILABLE }
 
 /**
- * Form state for "Создать аккаунт". The nickname is required (and has a minimum
- * length); the email is optional but, when present, must look like an address.
+ * Form state for "Создать аккаунт". Both the nickname and the email are required —
+ * the email must be confirmed by a mailed code before the account is usable, which
+ * happens on a dedicated screen (see `EmailConfirmationViewModel`) reached once this
+ * form succeeds.
  *
  * [usernameError] / [emailError] carry validation copy for the field helper lines,
  * [usernameAvailability] carries the async "is this nickname taken" check, and
@@ -42,6 +44,7 @@ data class RegistrationUiState(
 ) {
     val canSubmit: Boolean
         get() = username.isNotBlank() &&
+            email.isNotBlank() &&
             usernameError == null &&
             emailError == null &&
             !isLoading
@@ -105,13 +108,15 @@ class RegistrationViewModel @Inject constructor(
      * key left over from a previously logged-out account first — reusing it would
      * make the server reject this register() with PUBLIC_KEY_TAKEN, since that key
      * is already registered to the other account. A successful register() persists
-     * the session, which flips [AuthRepository.isLoggedIn] — the app-level gate
-     * observing it then hands off via [onRegistered].
+     * the session, which flips [AuthRepository.isLoggedIn] — but that alone doesn't
+     * mean the account is ready to use: the email is still unverified server-side,
+     * so this hands off to [onRegistered] to move to the email-confirmation screen
+     * rather than straight into the app.
      */
     fun onCreateAccount(onRegistered: () -> Unit) {
         val state = _uiState.value
         val usernameError = validateUsername(state.username, required = true)
-        val emailError = validateEmail(state.email)
+        val emailError = validateEmail(state.email, required = true)
         if (usernameError != null || emailError != null) {
             _uiState.update { it.copy(usernameError = usernameError, emailError = emailError) }
             return
@@ -122,11 +127,17 @@ class RegistrationViewModel @Inject constructor(
             try {
                 deviceKeyRepository.deleteDeviceKey()
                 val publicKey = deviceKeyRepository.getOrCreatePublicKey()
+                val email = state.email.trim()
+                // register() with an email already triggers the server's verification
+                // mail — a follow-up addEmail() here would send a second one. If that
+                // first send fails server-side, the confirmation screen's own "Отправить
+                // код ещё раз" covers the retry.
                 authRepository.register(
                     username = state.username.trim(),
                     publicKey = publicKey,
-                    email = state.email.trim().ifBlank { null },
+                    email = email,
                 )
+                _uiState.update { it.copy(isLoading = false) }
                 onRegistered()
             } catch (e: AuthException) {
                 _uiState.update { it.copy(isLoading = false, submitError = null).applyAuthError(e) }
@@ -153,10 +164,11 @@ class RegistrationViewModel @Inject constructor(
         }
     }
 
-    private fun validateEmail(value: String): String? {
+    /** Empty is fine while typing (button stays disabled); required only gates submit. */
+    private fun validateEmail(value: String, required: Boolean = false): String? {
         val trimmed = value.trim()
         return when {
-            trimmed.isEmpty() -> null // optional
+            trimmed.isEmpty() -> if (required) "Введите адрес почты" else null
             !Patterns.EMAIL_ADDRESS.matcher(trimmed).matches() -> "Проверьте адрес почты"
             else -> null
         }

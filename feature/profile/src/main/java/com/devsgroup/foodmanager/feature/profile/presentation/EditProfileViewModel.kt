@@ -80,9 +80,8 @@ class EditProfileViewModel @Inject constructor(
                         age = profile.age?.toString().orEmpty(),
                         cookingAttitude = profile.cookingAttitude,
                         bio = profile.bio.orEmpty(),
-                        // A stored email was verified when it was saved, so start in the confirmed state.
                         email = profile.email.orEmpty(),
-                        emailVerified = !profile.email.isNullOrBlank(),
+                        emailVerified = profile.emailVerified,
                     )
                 }
             } catch (e: ProfileException) {
@@ -206,7 +205,9 @@ class EditProfileViewModel @Inject constructor(
                 authRepository.verifyEmailByCode(state.emailCode)
                 // Confirmed server-side — commit it onto the profile independently of "Сохранить".
                 val current = profileRepository.profile().first()
-                profileRepository.updateProfile(current.copy(email = state.email.trim()))
+                profileRepository.updateProfile(
+                    current.copy(email = state.email.trim(), emailVerified = true),
+                )
                 _uiState.update {
                     it.copy(
                         isVerifyingCode = false,

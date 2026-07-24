@@ -5,6 +5,7 @@ data class UserProfile(
     val name: String,
     val username: String,
     val email: String? = null,
+    val emailVerified: Boolean = false,
     val avatarUrl: String? = null,
     val statusEmoji: String? = null,
     val age: Int? = null,

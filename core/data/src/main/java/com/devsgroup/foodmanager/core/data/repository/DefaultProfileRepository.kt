@@ -3,6 +3,7 @@ package com.devsgroup.foodmanager.core.data.repository
 import com.devsgroup.foodmanager.core.common.di.Dispatcher
 import com.devsgroup.foodmanager.core.common.di.FoodDispatcher
 import com.devsgroup.foodmanager.core.data.mapper.toDomain
+import com.devsgroup.foodmanager.core.datastore.ProfilePreferencesDataSource
 import com.devsgroup.foodmanager.core.domain.repository.ProfileRepository
 import com.devsgroup.foodmanager.core.model.ProfileException
 import com.devsgroup.foodmanager.core.model.UserProfile
@@ -10,6 +11,7 @@ import com.devsgroup.foodmanager.core.network.auth.model.ErrorResponse
 import com.devsgroup.foodmanager.core.network.profile.ProfileApi
 import com.devsgroup.foodmanager.core.network.profile.model.EditProfileRequest
 import com.devsgroup.foodmanager.core.network.profile.model.SetProfileImageRequest
+import com.devsgroup.foodmanager.core.network.toReachableMediaUrl
 import com.devsgroup.foodmanager.core.network.upload.UploadApi
 import android.util.Log
 import kotlinx.coroutines.CancellationException
@@ -17,6 +19,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -42,14 +45,32 @@ import javax.inject.Singleton
 class DefaultProfileRepository @Inject constructor(
     private val profileApi: ProfileApi,
     private val uploadApi: UploadApi,
+    private val profilePrefs: ProfilePreferencesDataSource,
     private val json: Json,
     @Dispatcher(FoodDispatcher.IO) private val ioDispatcher: CoroutineDispatcher,
 ) : ProfileRepository {
 
     private val cache = MutableStateFlow<UserProfile?>(null)
 
+    override val emailVerified: Flow<Boolean> = profilePrefs.profileFlow.map { it?.emailVerified ?: false }
+
+    override fun invalidateCache() {
+        cache.value = null
+    }
+
     override fun profile(): Flow<UserProfile> = cache
-        .onStart { if (cache.value == null) cache.value = fetchProfile() }
+        .onStart {
+            if (cache.value != null) return@onStart
+            val local = profilePrefs.currentProfile()
+            cache.value = try {
+                fetchProfile()
+            } catch (e: ProfileException.Network) {
+                // Offline with nothing fresh from the server — fall back to whatever
+                // was persisted locally (e.g. right after registration) instead of
+                // failing the whole screen.
+                local ?: throw e
+            }
+        }
         .filterNotNull()
 
     override suspend fun updateProfile(profile: UserProfile) {
@@ -79,22 +100,30 @@ class DefaultProfileRepository @Inject constructor(
             }
             result
         }
-        cache.value = updated.copy(email = profile.email, cookingAttitude = profile.cookingAttitude)
+        val merged = updated.copy(
+            email = profile.email,
+            emailVerified = profile.emailVerified,
+            cookingAttitude = profile.cookingAttitude,
+        )
+        cache.value = merged
+        profilePrefs.saveProfile(merged)
     }
 
     override suspend fun uploadAvatarImage(bytes: ByteArray, fileName: String, mimeType: String): String =
         apiCall {
             val requestBody = bytes.toRequestBody(mimeType.toMediaTypeOrNull())
             val part = MultipartBody.Part.createFormData("image", fileName, requestBody)
-            uploadApi.uploadImage(part).imageUrl
+            uploadApi.uploadImage(part).imageUrl.toReachableMediaUrl()
         }
 
     private suspend fun fetchProfile(): UserProfile = apiCall {
+        val local = cache.value ?: profilePrefs.currentProfile()
         profileApi.myProfile().user.toDomain().copy(
-            email = cache.value?.email,
+            email = local?.email,
+            emailVerified = local?.emailVerified ?: false,
             cookingAttitude = cache.value?.cookingAttitude,
         )
-    }
+    }.also { profilePrefs.saveProfile(it) }
 
     /** Runs [block] on the IO dispatcher and normalizes failures to [ProfileException]. */
     private suspend fun <T> apiCall(block: suspend () -> T): T = withContext(ioDispatcher) {

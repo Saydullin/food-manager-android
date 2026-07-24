@@ -1,5 +1,7 @@
 package com.devsgroup.foodmanager.core.network.di
 
+import android.util.Log
+import com.devsgroup.foodmanager.core.network.NetworkConfig
 import com.devsgroup.foodmanager.core.network.auth.AuthApi
 import com.devsgroup.foodmanager.core.network.interceptor.AuthInterceptor
 import com.devsgroup.foodmanager.core.network.interceptor.TokenRefreshAuthenticator
@@ -10,9 +12,11 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.json.Json
+import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import okhttp3.logging.HttpLoggingInterceptor.Level
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import javax.inject.Qualifier
@@ -32,7 +36,31 @@ annotation class RefreshApi
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    private const val BASE_URL = "http://192.168.80.132:3000/api/"
+    private const val BASE_URL = NetworkConfig.BASE_URL
+
+    /**
+     * [HttpLoggingInterceptor.Level.BODY] decodes the entire request body as text.
+     * For multipart uploads (profile image) that means reading a multi-MB image as
+     * UTF-8 and dumping it to Logcat, which stalls the request and floods the log
+     * with garbled binary — so the *request* side of multipart calls is logged at
+     * HEADERS level, but the (small, JSON) *response* body is still logged manually
+     * so the returned `imageUrl` is visible for diagnosing upload issues.
+     */
+    private fun loggingInterceptor(): Interceptor {
+        val headersOnly = HttpLoggingInterceptor().apply { level = Level.HEADERS }
+        val fullBody = HttpLoggingInterceptor().apply { level = Level.BODY }
+        return Interceptor { chain ->
+            val request = chain.request()
+            if (request.body?.contentType()?.type == "multipart") {
+                val response = headersOnly.intercept(chain)
+                val responseBody = runCatching { response.peekBody(4096).string() }.getOrNull()
+                Log.d("OkHttp", "<-- response body for ${request.url}: $responseBody")
+                response
+            } else {
+                fullBody.intercept(chain)
+            }
+        }
+    }
 
     @Provides
     @Singleton
@@ -50,9 +78,7 @@ object NetworkModule {
         OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
             .authenticator(tokenRefreshAuthenticator)
-            .addInterceptor(
-                HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY },
-            )
+            .addInterceptor(loggingInterceptor())
             .build()
 
     @Provides
@@ -81,9 +107,7 @@ object NetworkModule {
     @RefreshApi
     fun providesRefreshOkHttpClient(): OkHttpClient =
         OkHttpClient.Builder()
-            .addInterceptor(
-                HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY },
-            )
+            .addInterceptor(loggingInterceptor())
             .build()
 
     @Provides

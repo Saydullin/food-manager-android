@@ -22,12 +22,14 @@ import com.devsgroup.foodmanager.core.designsystem.component.FoodTextFieldCheckS
 import com.devsgroup.foodmanager.core.designsystem.theme.FoodManagerTheme
 
 /**
- * "Создать аккаунт" — a required nickname plus an optional email, per the 7a mock.
- * This is the stateful entry point: it wires [RegistrationViewModel] to the stateless
- * [RegistrationContent] and hoists navigation to the caller.
+ * "Создать аккаунт" — a required nickname plus a required email (confirmed by a mailed
+ * code on the follow-up email-confirmation screen). This is the stateful entry point:
+ * it wires [RegistrationViewModel] to the stateless [RegistrationContent] and hoists
+ * navigation to the caller.
  *
  * @param onNavigateToLogin switch to the login screen ("Уже есть аккаунт? Войти").
- * @param onRegistered leave the auth flow into the app once the account is created.
+ * @param onRegistered leave this screen once the account is created — the caller
+ *   navigates to the email-confirmation screen from here, not into the app.
  */
 @Composable
 internal fun RegistrationScreen(
@@ -59,7 +61,7 @@ private fun RegistrationContent(
 ) {
     AuthScaffold(
         title = "Создать\nаккаунт",
-        subtitle = "Никнейм — как вас увидят в семейной группе. Почту можно добавить позже.",
+        subtitle = "Никнейм — как вас увидят в семейной группе. Почту нужно подтвердить кодом из письма.",
         modifier = modifier,
     ) {
         FoodTextField(
@@ -84,7 +86,7 @@ private fun RegistrationContent(
             value = uiState.email,
             onValueChange = onEmailChange,
             label = "ПОЧТА",
-            isRequired = false,
+            isRequired = true,
             placeholder = "you@example.com",
             description = "Понадобится, чтобы войти с нового устройства.",
             isError = uiState.emailError != null,

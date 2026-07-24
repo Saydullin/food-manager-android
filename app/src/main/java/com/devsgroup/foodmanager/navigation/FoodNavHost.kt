@@ -8,6 +8,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.navOptions
 import com.devsgroup.foodmanager.feature.auth.navigation.RegistrationRoute
 import com.devsgroup.foodmanager.feature.auth.navigation.authScreens
+import com.devsgroup.foodmanager.feature.auth.navigation.navigateToEmailConfirmation
 import com.devsgroup.foodmanager.feature.auth.navigation.navigateToLogin
 import com.devsgroup.foodmanager.feature.auth.navigation.navigateToRegistration
 import com.devsgroup.foodmanager.feature.details.navigation.foodDetailsScreen
@@ -55,6 +56,9 @@ fun FoodNavHost(
             },
             onNavigateToRegistration = {
                 navController.navigateToRegistration(navOptions { launchSingleTop = true })
+            },
+            onNavigateToEmailConfirmation = {
+                navController.navigateToEmailConfirmation(navOptions { launchSingleTop = true })
             },
         )
         onboardingScreen(

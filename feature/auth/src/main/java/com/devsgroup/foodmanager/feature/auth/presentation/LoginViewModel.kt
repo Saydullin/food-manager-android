@@ -110,7 +110,14 @@ class LoginViewModel @Inject constructor(
                 authRepository.verify(challenge.challengeId, signature, deviceId)
                 onAuthenticated()
             } catch (e: AuthException) {
-                _uiState.update { it.copy(isLoading = false, submitError = null).applyAuthError(e) }
+                if (e is AuthException.Unauthorized) {
+                    // This device's key belongs to a different account (e.g. after
+                    // logging out of a second account) — fall back to email login
+                    // instead of a dead-end error.
+                    _uiState.update { it.copy(isLoading = false, needsEmailLogin = true) }
+                } else {
+                    _uiState.update { it.copy(isLoading = false, submitError = null).applyAuthError(e) }
+                }
             }
         }
     }
@@ -169,6 +176,10 @@ class LoginViewModel @Inject constructor(
         _uiState.update { it.copy(isConfirmingCode = true, codeError = null) }
         viewModelScope.launch {
             try {
+                // This device may still hold a key from a previously logged-out
+                // account — discard it so the server doesn't reject a public key
+                // already registered elsewhere.
+                deviceKeyRepository.deleteDeviceKey()
                 val publicKey = deviceKeyRepository.getOrCreatePublicKey()
                 authRepository.confirmLoginCode(
                     username = state.username.trim(),
@@ -185,7 +196,6 @@ class LoginViewModel @Inject constructor(
 
     private fun LoginUiState.applyAuthError(e: AuthException): LoginUiState = when (e) {
         is AuthException.NotFound -> copy(usernameError = "Пользователь не найден")
-        is AuthException.Unauthorized -> copy(submitError = "Не удалось подтвердить вход. Попробуйте снова.")
         is AuthException.Network -> copy(submitError = "Нет подключения к интернету")
         else -> copy(submitError = e.message ?: "Не удалось войти")
     }

@@ -6,9 +6,20 @@ import kotlinx.coroutines.flow.Flow
 /** Contract for the signed-in user's own display profile (name, username, bio, ...). */
 interface ProfileRepository {
 
+    /** True once the account's email has been confirmed by a mailed code. Backed by DataStore. */
+    val emailVerified: Flow<Boolean>
+
     fun profile(): Flow<UserProfile>
 
     suspend fun updateProfile(profile: UserProfile)
+
+    /**
+     * Drops any in-memory cached profile so the next [profile] collection re-reads
+     * from DataStore/network instead of returning a stale, previously-cached account's
+     * data. Needed around account switches (register/logout) — [profile]'s process-
+     * lifetime cache has no other way to know the signed-in account changed underneath it.
+     */
+    fun invalidateCache()
 
     /**
      * Uploads a raw image file and returns its public http(s) URL, ready to be passed

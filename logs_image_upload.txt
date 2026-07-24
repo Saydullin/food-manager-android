@@ -1,0 +1,17 @@
+SurfaceControl          com.devsgroup.foodmanager            I  nativeRelease 0xb40000748dc13b70 count: 1 name: Surface(name=3f01bbd StatusBar)/@0x2e6b637 - animation-leash of insets_animation#59270
+SurfaceControl          com.devsgroup.foodmanager            I  nativeRelease 0xb40000748dbf7070 count: 1 name: Surface(name=f6cb601 NavigationBar0)/@0xae7e90d - animation-leash of insets_animation#59271
+OkHttp                  com.devsgroup.foodmanager            I  <-- 201 Created http://192.168.80.132:3000/api/uploads/image (781ms)
+OkHttp                  com.devsgroup.foodmanager            I  X-Powered-By: Express
+OkHttp                  com.devsgroup.foodmanager            I  Vary: Origin
+OkHttp                  com.devsgroup.foodmanager            I  Content-Type: application/json; charset=utf-8
+OkHttp                  com.devsgroup.foodmanager            I  Content-Length: 85
+OkHttp                  com.devsgroup.foodmanager            I  ETag: W/"55-jTJl2XkQ2BQ5QGNSKHCEsI1KI4E"
+OkHttp                  com.devsgroup.foodmanager            I  Date: Fri, 24 Jul 2026 13:34:22 GMT
+OkHttp                  com.devsgroup.foodmanager            I  Connection: keep-alive
+OkHttp                  com.devsgroup.foodmanager            I  Keep-Alive: timeout=5
+OkHttp                  com.devsgroup.foodmanager            I  <-- END HTTP
+OkHttp                  com.devsgroup.foodmanager            D  <-- response body for http://192.168.80.132:3000/api/uploads/image: {"imageUrl":"http://localhost:3000/uploads/ac5c0732-a584-4fe6-a6a1-84eda66ba3c9.png"}
+EditProfileViewModel    com.devsgroup.foodmanager            D  Avatar uploaded, server returned imageUrl=http://localhost:3000/uploads/ac5c0732-a584-4fe6-a6a1-84eda66ba3c9.png
+EditProfileScreen       com.devsgroup.foodmanager            E  Failed to load avatar http://localhost:3000/uploads/ac5c0732-a584-4fe6-a6a1-84eda66ba3c9.png
+                                                                java.net.ConnectException: Failed to connect to localhost/127.0.0.1:3000
+                                                                	at okhttp3.internal.connection.ConnectPlan.connectSocket(ConnectPlan.kt:278)

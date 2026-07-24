@@ -3,6 +3,7 @@ package com.devsgroup.foodmanager.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.devsgroup.foodmanager.core.domain.repository.AuthRepository
+import com.devsgroup.foodmanager.core.domain.repository.ProfileRepository
 import com.devsgroup.foodmanager.core.domain.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -16,34 +17,41 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * Whether the app should open in the auth flow or straight into the app, and which theme
- * it should render in. [Loading] is the brief window while the persisted session is read
- * from DataStore — the UI holds a neutral splash until it resolves so the start
- * destination is picked exactly once.
+ * Whether the app should open in the auth flow, the email-confirmation gate, or
+ * straight into the app, and which theme it should render in. [Loading] is the brief
+ * window while the persisted session is read from DataStore — the UI holds a neutral
+ * splash until it resolves so the start destination is picked exactly once.
  */
 sealed interface AppUiState {
     data object Loading : AppUiState
-    data class Ready(val isLoggedIn: Boolean, val darkThemeEnabled: Boolean) : AppUiState
+    data class Ready(
+        val isLoggedIn: Boolean,
+        val emailVerified: Boolean,
+        val darkThemeEnabled: Boolean,
+    ) : AppUiState
 }
 
 /**
- * App-level gate over [AuthRepository.isLoggedIn] and [SettingsRepository.darkThemeEnabled].
- * [AppUiState.isLoggedIn] drives only the *initial* start destination — the NavHost is
- * composed after this resolves, so the graph is built once and later token changes don't
- * rebuild it. [AppUiState.darkThemeEnabled] is read continuously instead, since the
- * profile screen's theme toggle should switch the whole app live.
+ * App-level gate over [AuthRepository.isLoggedIn], [ProfileRepository.emailVerified],
+ * and [SettingsRepository.darkThemeEnabled]. [AppUiState.isLoggedIn]/[AppUiState.emailVerified]
+ * drive only the *initial* start destination — the NavHost is composed after this
+ * resolves, so the graph is built once and later token changes don't rebuild it.
+ * [AppUiState.darkThemeEnabled] is read continuously instead, since the profile
+ * screen's theme toggle should switch the whole app live.
  */
 @HiltViewModel
 class AppViewModel @Inject constructor(
     private val authRepository: AuthRepository,
+    profileRepository: ProfileRepository,
     settingsRepository: SettingsRepository,
 ) : ViewModel() {
 
     val uiState: StateFlow<AppUiState> = combine(
         authRepository.isLoggedIn,
+        profileRepository.emailVerified,
         settingsRepository.darkThemeEnabled(),
-    ) { isLoggedIn, darkThemeEnabled ->
-        AppUiState.Ready(isLoggedIn = isLoggedIn, darkThemeEnabled = darkThemeEnabled)
+    ) { isLoggedIn, emailVerified, darkThemeEnabled ->
+        AppUiState.Ready(isLoggedIn = isLoggedIn, emailVerified = emailVerified, darkThemeEnabled = darkThemeEnabled)
     }
         .stateIn(
             scope = viewModelScope,

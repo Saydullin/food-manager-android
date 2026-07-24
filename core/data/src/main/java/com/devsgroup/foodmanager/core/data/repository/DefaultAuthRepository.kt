@@ -4,12 +4,15 @@ import com.devsgroup.foodmanager.core.common.di.Dispatcher
 import com.devsgroup.foodmanager.core.common.di.FoodDispatcher
 import com.devsgroup.foodmanager.core.data.mapper.toDomain
 import com.devsgroup.foodmanager.core.datastore.AuthPreferencesDataSource
+import com.devsgroup.foodmanager.core.datastore.ProfilePreferencesDataSource
 import com.devsgroup.foodmanager.core.domain.repository.AuthRepository
+import com.devsgroup.foodmanager.core.domain.repository.ProfileRepository
 import com.devsgroup.foodmanager.core.model.AuthChallenge
 import com.devsgroup.foodmanager.core.model.AuthDevice
 import com.devsgroup.foodmanager.core.model.AuthException
 import com.devsgroup.foodmanager.core.model.AuthSession
 import com.devsgroup.foodmanager.core.model.AuthTokens
+import com.devsgroup.foodmanager.core.model.UserProfile
 import com.devsgroup.foodmanager.core.network.auth.AuthApi
 import com.devsgroup.foodmanager.core.network.auth.model.AddDeviceRequest
 import com.devsgroup.foodmanager.core.network.auth.model.AddEmailRequest
@@ -48,6 +51,8 @@ import javax.inject.Singleton
 class DefaultAuthRepository @Inject constructor(
     private val authApi: AuthApi,
     private val authPrefs: AuthPreferencesDataSource,
+    private val profilePrefs: ProfilePreferencesDataSource,
+    private val profileRepository: ProfileRepository,
     private val json: Json,
     @Dispatcher(FoodDispatcher.IO) private val ioDispatcher: CoroutineDispatcher,
 ) : AuthRepository {
@@ -84,6 +89,21 @@ class DefaultAuthRepository @Inject constructor(
         authPrefs.updateTokens(response.accessToken, response.refreshToken)
         authPrefs.updateDeviceId(response.device.id)
         authPrefs.updateUsername(response.user.username)
+        // Drop any profile cached in memory from a previous account in this same
+        // process (e.g. registering a second account after a logout) before seeding
+        // the new one — otherwise ProfileRepository.profile() keeps serving the old
+        // account's data until the process restarts.
+        profileRepository.invalidateCache()
+        // Persist a baseline profile so the Profile screen has correct data (username,
+        // email) to show on a later offline launch, before any `/users/me` fetch runs.
+        profilePrefs.saveProfile(
+            UserProfile(
+                name = response.user.username,
+                username = "@${response.user.username}",
+                email = response.user.email ?: email,
+                emailVerified = response.user.emailVerified,
+            ),
+        )
         response.toDomain()
     }
 
@@ -122,6 +142,7 @@ class DefaultAuthRepository @Inject constructor(
                 .onFailure { Log.e(TAG, "Server-side logout failed, clearing local session anyway", it) }
         }
         authPrefs.clear()
+        profileRepository.invalidateCache()
     }
 
     override suspend fun addEmail(email: String) = apiCall {

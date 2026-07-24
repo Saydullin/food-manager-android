@@ -31,6 +31,7 @@ import com.devsgroup.foodmanager.core.designsystem.component.FoodTopAppBar
 import com.devsgroup.foodmanager.core.designsystem.component.FoodTopBarConfig
 import com.devsgroup.foodmanager.core.designsystem.component.LocalFoodTopBarState
 import com.devsgroup.foodmanager.core.designsystem.theme.FoodManagerTheme
+import com.devsgroup.foodmanager.feature.auth.navigation.EmailConfirmationRoute
 import com.devsgroup.foodmanager.feature.auth.navigation.LoginRoute
 import com.devsgroup.foodmanager.feature.auth.navigation.RegistrationRoute
 import com.devsgroup.foodmanager.feature.onboarding.navigation.OnboardingRoute
@@ -56,8 +57,13 @@ fun FoodApp(
         AppUiState.Loading -> FoodManagerTheme { LoadingScreen() }
         is AppUiState.Ready -> FoodManagerTheme(darkTheme = state.darkThemeEnabled) {
             FoodAppContent(
-                // Signed-out users land in the auth flow; signed-in users skip it.
-                startDestination = if (state.isLoggedIn) RecommendationsRoute else RegistrationRoute,
+                // Signed-out users land in the auth flow; signed-in-but-unverified users
+                // land on the email-confirmation gate; only a verified session skips both.
+                startDestination = when {
+                    !state.isLoggedIn -> RegistrationRoute
+                    !state.emailVerified -> EmailConfirmationRoute
+                    else -> RecommendationsRoute
+                },
                 forcedLogoutEvents = viewModel.forcedLogoutEvents,
             )
         }
@@ -96,6 +102,7 @@ private fun FoodAppContent(startDestination: Any, forcedLogoutEvents: SharedFlow
     val isChromelessRoute = currentDestination?.let { destination ->
         destination.hasRoute(RegistrationRoute::class) ||
             destination.hasRoute(LoginRoute::class) ||
+            destination.hasRoute(EmailConfirmationRoute::class) ||
             destination.hasRoute(OnboardingRoute::class)
     } == true
 

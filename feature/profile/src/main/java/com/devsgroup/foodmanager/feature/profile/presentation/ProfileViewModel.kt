@@ -95,7 +95,12 @@ class ProfileViewModel @Inject constructor(
         profileRepository.profile()
             .catch { e ->
                 if (e !is ProfileException) throw e
-                showToast(e.toDisplayMessage(), isError = true)
+                // A connectivity failure while just loading the screen shouldn't
+                // interrupt the user with a toast — only surface it when they
+                // actively try to save/change something (see EditProfileViewModel).
+                if (e !is ProfileException.Network) {
+                    showToast(e.toDisplayMessage(), isError = true)
+                }
                 emit(UserProfile(name = "", username = ""))
             },
         tasteProfileRepository.tasteProfile(),
