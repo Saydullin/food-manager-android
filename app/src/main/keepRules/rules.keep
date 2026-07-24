@@ -10,3 +10,38 @@
 #-keepclassmembers class fqcn.of.javascript.interface.for.webview {
 #   public *;
 #}
+
+# ---------------------------------------------------------------------------
+# kotlinx.serialization: the retrofit2 kotlinx-serialization converter looks up
+# each DTO's generated $serializer/Companion.serializer() reflectively at
+# runtime. Without these rules R8 strips/renames that machinery in release
+# builds only, breaking every network call that serializes/deserializes a
+# request or response body (e.g. FoodApi.recordInteraction, used by the food
+# feed's reject/dislike/addToCart actions).
+# ---------------------------------------------------------------------------
+-keepattributes *Annotation*, InnerClasses, Signature, Exceptions
+
+-keepclassmembers class kotlinx.serialization.json.** {
+    *** Companion;
+}
+-keepclasseswithmembers class kotlinx.serialization.json.** {
+    kotlinx.serialization.KSerializer serializer(...);
+}
+
+-keep,includedescriptorclasses class com.devsgroup.foodmanager.**$$serializer { *; }
+-keepclassmembers class com.devsgroup.foodmanager.** {
+    *** Companion;
+}
+-keepclasseswithmembers class com.devsgroup.foodmanager.** {
+    kotlinx.serialization.KSerializer serializer(...);
+}
+
+# ---------------------------------------------------------------------------
+# Retrofit: with R8 full mode, generic signatures are stripped from classes
+# that aren't otherwise kept. Suspend API methods are compiled to take a
+# Continuation<T> parameter, and Retrofit needs that generic type argument at
+# runtime to know what to deserialize the response body into.
+# ---------------------------------------------------------------------------
+-if interface * { @retrofit2.http.* <methods>; }
+-keep,allowobfuscation interface <1>
+-keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
