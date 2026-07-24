@@ -101,9 +101,12 @@ class RegistrationViewModel @Inject constructor(
 
     /**
      * Validates the form and, when it passes, generates this device's signing key
-     * (Android Keystore) and registers the account with its public key. A successful
-     * register() persists the session, which flips [AuthRepository.isLoggedIn] — the
-     * app-level gate observing it then hands off via [onRegistered].
+     * (Android Keystore) and registers the account with its public key. Discards any
+     * key left over from a previously logged-out account first — reusing it would
+     * make the server reject this register() with PUBLIC_KEY_TAKEN, since that key
+     * is already registered to the other account. A successful register() persists
+     * the session, which flips [AuthRepository.isLoggedIn] — the app-level gate
+     * observing it then hands off via [onRegistered].
      */
     fun onCreateAccount(onRegistered: () -> Unit) {
         val state = _uiState.value
@@ -117,6 +120,7 @@ class RegistrationViewModel @Inject constructor(
         _uiState.update { it.copy(isLoading = true, submitError = null) }
         viewModelScope.launch {
             try {
+                deviceKeyRepository.deleteDeviceKey()
                 val publicKey = deviceKeyRepository.getOrCreatePublicKey()
                 authRepository.register(
                     username = state.username.trim(),

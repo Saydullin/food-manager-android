@@ -10,6 +10,7 @@ import com.devsgroup.foodmanager.core.network.auth.model.ErrorResponse
 import com.devsgroup.foodmanager.core.network.profile.ProfileApi
 import com.devsgroup.foodmanager.core.network.profile.model.EditProfileRequest
 import com.devsgroup.foodmanager.core.network.profile.model.SetProfileImageRequest
+import com.devsgroup.foodmanager.core.network.upload.UploadApi
 import android.util.Log
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
@@ -19,6 +20,9 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.HttpException
 import java.io.IOException
 import javax.inject.Inject
@@ -37,6 +41,7 @@ import javax.inject.Singleton
 @Singleton
 class DefaultProfileRepository @Inject constructor(
     private val profileApi: ProfileApi,
+    private val uploadApi: UploadApi,
     private val json: Json,
     @Dispatcher(FoodDispatcher.IO) private val ioDispatcher: CoroutineDispatcher,
 ) : ProfileRepository {
@@ -76,6 +81,13 @@ class DefaultProfileRepository @Inject constructor(
         }
         cache.value = updated.copy(email = profile.email, cookingAttitude = profile.cookingAttitude)
     }
+
+    override suspend fun uploadAvatarImage(bytes: ByteArray, fileName: String, mimeType: String): String =
+        apiCall {
+            val requestBody = bytes.toRequestBody(mimeType.toMediaTypeOrNull())
+            val part = MultipartBody.Part.createFormData("image", fileName, requestBody)
+            uploadApi.uploadImage(part).imageUrl
+        }
 
     private suspend fun fetchProfile(): UserProfile = apiCall {
         profileApi.myProfile().user.toDomain().copy(

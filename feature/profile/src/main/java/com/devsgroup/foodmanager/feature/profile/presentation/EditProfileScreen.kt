@@ -23,6 +23,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -76,7 +77,9 @@ internal fun EditProfileScreen(
         uiState = uiState,
         onBack = onBack,
         onAvatarClick = {
-            pickPhotoLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            if (!uiState.isUploadingAvatar) {
+                pickPhotoLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            }
         },
         onDeletePhotoClick = viewModel::onAvatarDelete,
         onStatusEmojiSelect = viewModel::onStatusEmojiSelect,
@@ -143,6 +146,7 @@ private fun EditProfileContent(
             avatarUrl = uiState.avatarUrl,
             displayName = uiState.name.ifBlank { uiState.username },
             statusEmoji = uiState.statusEmoji,
+            isUploadingAvatar = uiState.isUploadingAvatar,
             onAvatarClick = onAvatarClick,
             onStatusEmojiSelect = onStatusEmojiSelect,
             onDeletePhotoClick = onDeletePhotoClick,
@@ -217,6 +221,17 @@ private fun EditProfileContent(
             onResendEmailCode = onResendEmailCode,
         )
         Spacer(Modifier.height(28.dp))
+        uiState.saveError?.let { error ->
+            Text(
+                text = error,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp),
+            )
+        }
         FoodButton(
             text = if (uiState.isSaving) "Сохраняем…" else "Сохранить",
             onClick = onSaveClick,
@@ -342,6 +357,7 @@ private fun EditProfileAvatarSection(
     avatarUrl: String?,
     displayName: String,
     statusEmoji: String?,
+    isUploadingAvatar: Boolean,
     onAvatarClick: () -> Unit,
     onStatusEmojiSelect: (String) -> Unit,
     onDeletePhotoClick: () -> Unit,
@@ -360,13 +376,13 @@ private fun EditProfileAvatarSection(
                     modifier = Modifier
                         .fillMaxSize()
                         .clip(CircleShape)
-                        .clickable(onClick = onAvatarClick),
+                        .clickable(enabled = !isUploadingAvatar, onClick = onAvatarClick),
                 )
             } else {
                 Surface(
                     modifier = Modifier
                         .fillMaxSize()
-                        .clickable(onClick = onAvatarClick),
+                        .clickable(enabled = !isUploadingAvatar, onClick = onAvatarClick),
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.primaryContainer,
                 ) {
@@ -375,6 +391,23 @@ private fun EditProfileAvatarSection(
                             text = displayName.firstOrNull()?.uppercase() ?: "?",
                             style = MaterialTheme.typography.headlineLarge,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                    }
+                }
+            }
+
+            if (isUploadingAvatar) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape),
+                    color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.4f),
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(32.dp),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            strokeWidth = 3.dp,
                         )
                     }
                 }
@@ -424,7 +457,7 @@ private fun EditProfileAvatarSection(
                 text = "Удалить фото",
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.clickable(onClick = onDeletePhotoClick),
+                modifier = Modifier.clickable(enabled = !isUploadingAvatar, onClick = onDeletePhotoClick),
             )
         }
     }

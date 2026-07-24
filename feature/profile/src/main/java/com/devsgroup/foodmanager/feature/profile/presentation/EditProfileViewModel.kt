@@ -1,5 +1,7 @@
 package com.devsgroup.foodmanager.feature.profile.presentation
 
+import android.content.Context
+import android.net.Uri
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,6 +11,7 @@ import com.devsgroup.foodmanager.core.model.AuthException
 import com.devsgroup.foodmanager.core.model.CookingAttitude
 import com.devsgroup.foodmanager.core.model.ProfileException
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -40,8 +43,10 @@ data class EditProfileUiState(
     val emailCodeError: String? = null,
     val isVerifyingCode: Boolean = false,
     val emailStatus: String? = null,
+    val saveError: String? = null,
+    val isUploadingAvatar: Boolean = false,
 ) {
-    val canSave: Boolean get() = username.isNotBlank() && !isSaving
+    val canSave: Boolean get() = username.isNotBlank() && !isSaving && !isUploadingAvatar
 
     /** The "send code" action lights up only for a fresh, well-formed, unconfirmed address. */
     val canSendCode: Boolean
@@ -56,6 +61,7 @@ data class EditProfileUiState(
 class EditProfileViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
     private val authRepository: AuthRepository,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EditProfileUiState())
@@ -89,12 +95,32 @@ class EditProfileViewModel @Inject constructor(
         _uiState.update { it.copy(username = value, usernameError = null) }
     }
 
+    /**
+     * The picker hands back a local `content://` URI, but the server's avatar field
+     * only accepts an already-hosted http(s) URL — so the picked file is uploaded via
+     * `POST /uploads/image` right away (independent of "Сохранить", like the email
+     * verification flow) and [avatarUrl] is only set once the server hands back its
+     * public URL.
+     */
     fun onAvatarChange(uri: String) {
-        _uiState.update { it.copy(avatarUrl = uri) }
+        _uiState.update { it.copy(isUploadingAvatar = true, saveError = null) }
+        viewModelScope.launch {
+            try {
+                val parsed = Uri.parse(uri)
+                val mimeType = context.contentResolver.getType(parsed) ?: "image/jpeg"
+                val bytes = context.contentResolver.openInputStream(parsed)?.use { it.readBytes() }
+                    ?: throw ProfileException.Unknown("Не удалось прочитать файл", null)
+                val fileName = "avatar.${mimeType.substringAfterLast('/', "jpg")}"
+                val uploadedUrl = profileRepository.uploadAvatarImage(bytes, fileName, mimeType)
+                _uiState.update { it.copy(isUploadingAvatar = false, avatarUrl = uploadedUrl) }
+            } catch (e: ProfileException) {
+                _uiState.update { it.copy(isUploadingAvatar = false, saveError = e.toUploadMessage()) }
+            }
+        }
     }
 
     fun onAvatarDelete() {
-        _uiState.update { it.copy(avatarUrl = null) }
+        _uiState.update { it.copy(avatarUrl = null, saveError = null) }
     }
 
     fun onStatusEmojiSelect(emoji: String) {
@@ -204,22 +230,26 @@ class EditProfileViewModel @Inject constructor(
             _uiState.update { it.copy(usernameError = "Придумайте никнейм") }
             return
         }
-        _uiState.update { it.copy(isSaving = true) }
+        _uiState.update { it.copy(isSaving = true, saveError = null) }
         viewModelScope.launch {
-            val current = profileRepository.profile().first()
-            profileRepository.updateProfile(
-                current.copy(
-                    username = "@${state.username.trim().removePrefix("@")}",
-                    name = state.name.trim().ifBlank { current.name },
-                    avatarUrl = state.avatarUrl,
-                    statusEmoji = state.statusEmoji,
-                    age = state.age.toIntOrNull(),
-                    cookingAttitude = state.cookingAttitude,
-                    bio = state.bio.trim().ifBlank { null },
-                ),
-            )
-            _uiState.update { it.copy(isSaving = false) }
-            onSaved()
+            try {
+                val current = profileRepository.profile().first()
+                profileRepository.updateProfile(
+                    current.copy(
+                        username = "@${state.username.trim().removePrefix("@")}",
+                        name = state.name.trim().ifBlank { current.name },
+                        avatarUrl = state.avatarUrl,
+                        statusEmoji = state.statusEmoji,
+                        age = state.age.toIntOrNull(),
+                        cookingAttitude = state.cookingAttitude,
+                        bio = state.bio.trim().ifBlank { null },
+                    ),
+                )
+                _uiState.update { it.copy(isSaving = false) }
+                onSaved()
+            } catch (e: ProfileException) {
+                _uiState.update { it.copy(isSaving = false, saveError = e.toSaveMessage()) }
+            }
         }
     }
 
@@ -244,5 +274,20 @@ class EditProfileViewModel @Inject constructor(
         is AuthException.InvalidRequest -> "Неверный или устаревший код"
         is AuthException.Network -> "Нет подключения к интернету"
         else -> message ?: "Не удалось подтвердить почту"
+    }
+
+    private fun ProfileException.toSaveMessage(): String = when (this) {
+        is ProfileException.InvalidRequest -> "Проверьте введённые данные"
+        is ProfileException.Conflict -> "Этот никнейм уже занят"
+        is ProfileException.Network -> "Нет подключения к интернету"
+        is ProfileException.Unauthorized -> "Сессия истекла, войдите заново"
+        else -> message ?: "Не удалось сохранить профиль"
+    }
+
+    private fun ProfileException.toUploadMessage(): String = when (this) {
+        is ProfileException.InvalidRequest -> message ?: "Неподдерживаемый формат или слишком большой файл"
+        is ProfileException.Network -> "Нет подключения к интернету"
+        is ProfileException.Unauthorized -> "Сессия истекла, войдите заново"
+        else -> message ?: "Не удалось загрузить фото"
     }
 }

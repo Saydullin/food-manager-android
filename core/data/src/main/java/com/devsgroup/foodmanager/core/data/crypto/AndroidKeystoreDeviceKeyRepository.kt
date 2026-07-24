@@ -59,6 +59,12 @@ class AndroidKeystoreDeviceKeyRepository @Inject constructor(
         Base64.getEncoder().encodeToString(signatureBytes)
     }
 
+    override suspend fun deleteDeviceKey(): Unit = withContext(ioDispatcher) {
+        if (keyStore.containsAlias(KEY_ALIAS)) {
+            keyStore.deleteEntry(KEY_ALIAS)
+        }
+    }
+
     private fun privateKeyEntry(): KeyStore.PrivateKeyEntry? =
         keyStore.getEntry(KEY_ALIAS, null) as? KeyStore.PrivateKeyEntry
 

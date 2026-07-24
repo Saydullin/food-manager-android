@@ -4,6 +4,7 @@ import com.devsgroup.foodmanager.core.network.auth.AuthApi
 import com.devsgroup.foodmanager.core.network.interceptor.AuthInterceptor
 import com.devsgroup.foodmanager.core.network.interceptor.TokenRefreshAuthenticator
 import com.devsgroup.foodmanager.core.network.profile.ProfileApi
+import com.devsgroup.foodmanager.core.network.upload.UploadApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -70,6 +71,10 @@ object NetworkModule {
     @Provides
     @Singleton
     fun providesProfileApi(retrofit: Retrofit): ProfileApi = retrofit.create(ProfileApi::class.java)
+
+    @Provides
+    @Singleton
+    fun providesUploadApi(retrofit: Retrofit): UploadApi = retrofit.create(UploadApi::class.java)
 
     @Provides
     @Singleton
