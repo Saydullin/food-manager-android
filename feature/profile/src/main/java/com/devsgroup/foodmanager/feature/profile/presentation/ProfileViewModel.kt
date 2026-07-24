@@ -12,6 +12,7 @@ import com.devsgroup.foodmanager.core.domain.repository.TasteProfileRepository
 import com.devsgroup.foodmanager.core.model.AppLanguage
 import com.devsgroup.foodmanager.core.model.DietaryTag
 import com.devsgroup.foodmanager.core.model.Food
+import com.devsgroup.foodmanager.core.model.ProfileException
 import com.devsgroup.foodmanager.core.model.Recipe
 import com.devsgroup.foodmanager.core.model.UserGroup
 import com.devsgroup.foodmanager.core.model.UserProfile
@@ -20,6 +21,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
@@ -50,12 +52,14 @@ data class ProfileUiState(
     val language: AppLanguage = AppLanguage.RUSSIAN,
     val sheet: ProfileSheet? = null,
     val toast: String? = null,
+    val toastIsError: Boolean = false,
 )
 
 /** Ephemeral UI-only state that no repository owns: which sheet is open, the toast. */
 private data class LocalUiState(
     val sheet: ProfileSheet? = null,
     val toast: String? = null,
+    val toastIsError: Boolean = false,
 )
 
 private data class RepositoryState(
@@ -88,7 +92,12 @@ class ProfileViewModel @Inject constructor(
     private val localState = MutableStateFlow(LocalUiState())
 
     private val repositoryState = combine(
-        profileRepository.profile(),
+        profileRepository.profile()
+            .catch { e ->
+                if (e !is ProfileException) throw e
+                showToast(e.toDisplayMessage(), isError = true)
+                emit(UserProfile(name = "", username = ""))
+            },
         tasteProfileRepository.tasteProfile(),
         groupRepository.groups(),
         recipeRepository.myRecipes(),
@@ -131,6 +140,7 @@ class ProfileViewModel @Inject constructor(
             language = settings.language,
             sheet = local.sheet,
             toast = local.toast,
+            toastIsError = local.toastIsError,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -264,12 +274,22 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    private fun showToast(message: String) {
-        localState.update { it.copy(toast = message) }
+    private fun showToast(message: String, isError: Boolean = false) {
+        localState.update { it.copy(toast = message, toastIsError = isError) }
         viewModelScope.launch {
             delay(TOAST_DURATION.inWholeMilliseconds)
-            localState.update { if (it.toast == message) it.copy(toast = null) else it }
+            localState.update { if (it.toast == message) it.copy(toast = null, toastIsError = false) else it }
         }
+    }
+
+    /** Localizes a fetch failure for [profileRepository.profile] into a user-facing toast. */
+    private fun ProfileException.toDisplayMessage(): String = when (this) {
+        is ProfileException.Network -> "Нет подключения к интернету"
+        is ProfileException.Unauthorized -> "Сессия истекла, войдите заново"
+        is ProfileException.NotFound -> "Профиль не найден"
+        is ProfileException.Conflict -> message ?: "Конфликт данных профиля"
+        is ProfileException.InvalidRequest -> message ?: "Некорректные данные профиля"
+        is ProfileException.Unknown -> message ?: "Не удалось загрузить профиль"
     }
 
     private companion object {

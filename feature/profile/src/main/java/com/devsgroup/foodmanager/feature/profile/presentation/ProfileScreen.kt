@@ -155,6 +155,7 @@ private fun ProfileContent(
 
         ProfileToastHost(
             message = uiState.toast,
+            isError = uiState.toastIsError,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 14.dp),
@@ -215,15 +216,19 @@ private fun ProfileContent(
 }
 
 /**
- * The bottom-anchored confirmation pill. Keeps the last non-null [message] around
- * while [AnimatedVisibility] plays the exit transition, so the text doesn't blank out
- * mid-fade once the view model clears the toast.
+ * The bottom-anchored confirmation pill. Keeps the last non-null [message] (and its
+ * [isError] style) around while [AnimatedVisibility] plays the exit transition, so
+ * neither blanks out mid-fade once the view model clears the toast.
  */
 @Composable
-internal fun ProfileToastHost(message: String?, modifier: Modifier = Modifier) {
+internal fun ProfileToastHost(message: String?, isError: Boolean = false, modifier: Modifier = Modifier) {
     var lastMessage by remember { mutableStateOf("") }
+    var lastIsError by remember { mutableStateOf(false) }
     LaunchedEffect(message) {
-        message?.let { lastMessage = it }
+        message?.let {
+            lastMessage = it
+            lastIsError = isError
+        }
     }
     AnimatedVisibility(
         visible = message != null,
@@ -233,8 +238,16 @@ internal fun ProfileToastHost(message: String?, modifier: Modifier = Modifier) {
     ) {
         Surface(
             shape = MaterialTheme.shapes.small,
-            color = MaterialTheme.colorScheme.inverseSurface,
-            contentColor = MaterialTheme.colorScheme.inverseOnSurface,
+            color = if (lastIsError) {
+                MaterialTheme.colorScheme.errorContainer
+            } else {
+                MaterialTheme.colorScheme.inverseSurface
+            },
+            contentColor = if (lastIsError) {
+                MaterialTheme.colorScheme.onErrorContainer
+            } else {
+                MaterialTheme.colorScheme.inverseOnSurface
+            },
             shadowElevation = 6.dp,
         ) {
             Text(

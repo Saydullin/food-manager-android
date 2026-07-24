@@ -1,38 +1,131 @@
 package com.devsgroup.foodmanager.core.data.repository
 
-import com.devsgroup.foodmanager.core.datastore.AuthPreferencesDataSource
+import com.devsgroup.foodmanager.core.common.di.Dispatcher
+import com.devsgroup.foodmanager.core.common.di.FoodDispatcher
+import com.devsgroup.foodmanager.core.data.mapper.toDomain
 import com.devsgroup.foodmanager.core.domain.repository.ProfileRepository
+import com.devsgroup.foodmanager.core.model.ProfileException
 import com.devsgroup.foodmanager.core.model.UserProfile
+import com.devsgroup.foodmanager.core.network.auth.model.ErrorResponse
+import com.devsgroup.foodmanager.core.network.profile.ProfileApi
+import com.devsgroup.foodmanager.core.network.profile.model.EditProfileRequest
+import com.devsgroup.foodmanager.core.network.profile.model.SetProfileImageRequest
+import android.util.Log
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import retrofit2.HttpException
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * In-memory implementation: holds profile edits for the process lifetime, defaulting
- * to the registered account's username until the user customizes it from the
- * edit-profile screen — that edit then wins over the auth-sourced default.
- * Back this with Preferences DataStore (:core:datastore) to persist edits across sessions.
+ * Backs the signed-in user's profile with the real `/users/me` endpoints ([ProfileApi]).
+ * The server splits editing across two calls — `PATCH /users/me` for the text/age
+ * fields and `PUT`/`DELETE /users/me/image` for the avatar — so [updateProfile] fans
+ * a single domain edit out to whichever of those the changed fields require, then
+ * caches the server's (authoritative) response for the process lifetime. `email` and
+ * `cookingAttitude` aren't part of this vertical's wire schema (email is owned by the
+ * auth email-verification flow; cookingAttitude is a purely client-side preference),
+ * so both are carried forward from the caller/cache rather than sent to the server.
  */
 @Singleton
 class DefaultProfileRepository @Inject constructor(
-    private val authPrefs: AuthPreferencesDataSource,
+    private val profileApi: ProfileApi,
+    private val json: Json,
+    @Dispatcher(FoodDispatcher.IO) private val ioDispatcher: CoroutineDispatcher,
 ) : ProfileRepository {
 
-    private val edited = MutableStateFlow<UserProfile?>(null)
+    private val cache = MutableStateFlow<UserProfile?>(null)
 
-    override fun profile(): Flow<UserProfile> =
-        combine(authPrefs.usernameFlow, edited) { username, edited ->
-            edited ?: defaultProfile(username)
-        }
+    override fun profile(): Flow<UserProfile> = cache
+        .onStart { if (cache.value == null) cache.value = fetchProfile() }
+        .filterNotNull()
 
     override suspend fun updateProfile(profile: UserProfile) {
-        edited.value = profile
+        val currentUsername = cache.value?.username?.removePrefix("@")
+        val newUsername = profile.username.removePrefix("@")
+        val updated = apiCall {
+            var result = profileApi.editProfile(
+                EditProfileRequest(
+                    // Only sent when actually renaming — resending the unchanged
+                    // handle risks a spurious 409 if the server's uniqueness check
+                    // doesn't special-case "taken by yourself".
+                    username = newUsername.takeIf { it.isNotBlank() && it != currentUsername },
+                    name = profile.name,
+                    age = profile.age,
+                    status = profile.statusEmoji.orEmpty(),
+                    description = profile.bio.orEmpty(),
+                ),
+            ).user.toDomain()
+
+            val newAvatarUrl = profile.avatarUrl
+            if (newAvatarUrl != result.avatarUrl) {
+                result = if (newAvatarUrl.isNullOrBlank()) {
+                    profileApi.removeProfileImage().user.toDomain()
+                } else {
+                    profileApi.setProfileImage(SetProfileImageRequest(newAvatarUrl)).user.toDomain()
+                }
+            }
+            result
+        }
+        cache.value = updated.copy(email = profile.email, cookingAttitude = profile.cookingAttitude)
     }
 
-    private fun defaultProfile(username: String?): UserProfile {
-        val handle = username?.trim().orEmpty()
-        return UserProfile(name = handle, username = if (handle.isEmpty()) "" else "@$handle")
+    private suspend fun fetchProfile(): UserProfile = apiCall {
+        profileApi.myProfile().user.toDomain().copy(
+            email = cache.value?.email,
+            cookingAttitude = cache.value?.cookingAttitude,
+        )
     }
+
+    /** Runs [block] on the IO dispatcher and normalizes failures to [ProfileException]. */
+    private suspend fun <T> apiCall(block: suspend () -> T): T = withContext(ioDispatcher) {
+        try {
+            block()
+        } catch (e: ProfileException) {
+            throw e
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: HttpException) {
+            Log.e(TAG, "HTTP error calling profile API", e)
+            throw e.toProfileException()
+        } catch (e: IOException) {
+            Log.e(TAG, "Network error calling profile API", e)
+            throw ProfileException.Network(e)
+        } catch (e: Exception) {
+            Log.e(TAG, "Unexpected error calling profile API", e)
+            throw ProfileException.Unknown(e.message, e)
+        }
+    }
+
+    private companion object {
+        const val TAG = "DefaultProfileRepository"
+    }
+
+    private fun HttpException.toProfileException(): ProfileException {
+        val serverMessage = parseErrorMessage() ?: message()
+        return when (code()) {
+            400 -> ProfileException.InvalidRequest(serverMessage)
+            401, 403 -> ProfileException.Unauthorized(serverMessage)
+            404 -> ProfileException.NotFound(serverMessage)
+            409 -> ProfileException.Conflict(serverMessage)
+            else -> ProfileException.Unknown(serverMessage, this)
+        }
+    }
+
+    /** Extracts `error.message` from the server's `{ "error": {...} }` envelope. */
+    private fun HttpException.parseErrorMessage(): String? = runCatching {
+        val body = response()?.errorBody()?.string()
+        if (body.isNullOrBlank()) {
+            null
+        } else {
+            json.decodeFromString(ErrorResponse.serializer(), body).error.message.takeIf { it.isNotBlank() }
+        }
+    }.getOrNull()
 }

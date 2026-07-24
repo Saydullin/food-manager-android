@@ -7,6 +7,7 @@ import com.devsgroup.foodmanager.core.domain.repository.AuthRepository
 import com.devsgroup.foodmanager.core.domain.repository.ProfileRepository
 import com.devsgroup.foodmanager.core.model.AuthException
 import com.devsgroup.foodmanager.core.model.CookingAttitude
+import com.devsgroup.foodmanager.core.model.ProfileException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -62,20 +63,24 @@ class EditProfileViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            val profile = profileRepository.profile().first()
-            _uiState.update {
-                it.copy(
-                    username = profile.username.removePrefix("@"),
-                    name = profile.name,
-                    avatarUrl = profile.avatarUrl,
-                    statusEmoji = profile.statusEmoji,
-                    age = profile.age?.toString().orEmpty(),
-                    cookingAttitude = profile.cookingAttitude,
-                    bio = profile.bio.orEmpty(),
-                    // A stored email was verified when it was saved, so start in the confirmed state.
-                    email = profile.email.orEmpty(),
-                    emailVerified = !profile.email.isNullOrBlank(),
-                )
+            try {
+                val profile = profileRepository.profile().first()
+                _uiState.update {
+                    it.copy(
+                        username = profile.username.removePrefix("@"),
+                        name = profile.name,
+                        avatarUrl = profile.avatarUrl,
+                        statusEmoji = profile.statusEmoji,
+                        age = profile.age?.toString().orEmpty(),
+                        cookingAttitude = profile.cookingAttitude,
+                        bio = profile.bio.orEmpty(),
+                        // A stored email was verified when it was saved, so start in the confirmed state.
+                        email = profile.email.orEmpty(),
+                        emailVerified = !profile.email.isNullOrBlank(),
+                    )
+                }
+            } catch (e: ProfileException) {
+                // Leave the form at its blank defaults — Сохранить will retry the fetch via updateProfile.
             }
         }
     }

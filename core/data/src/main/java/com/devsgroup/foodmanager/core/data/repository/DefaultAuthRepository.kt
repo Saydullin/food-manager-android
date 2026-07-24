@@ -24,6 +24,7 @@ import com.devsgroup.foodmanager.core.network.auth.model.RequestLoginCodeRequest
 import com.devsgroup.foodmanager.core.network.auth.model.RequestRecoveryRequest
 import com.devsgroup.foodmanager.core.network.auth.model.VerifyEmailCodeRequest
 import com.devsgroup.foodmanager.core.network.auth.model.VerifyRequest
+import android.util.Log
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
@@ -65,6 +66,8 @@ class DefaultAuthRepository @Inject constructor(
 
     override val deviceId: Flow<String?> = authPrefs.deviceIdFlow
 
+    override val sessionExpired: Flow<Unit> = authPrefs.sessionExpired
+
     override suspend fun isUsernameAvailable(username: String): Boolean = apiCall {
         authApi.usernameAvailable(username).available
     }
@@ -101,6 +104,7 @@ class DefaultAuthRepository @Inject constructor(
     override suspend fun refresh(): AuthTokens {
         val refreshToken = authPrefs.refreshTokenFlow.first()
         if (refreshToken.isNullOrBlank()) {
+            Log.e(TAG, "Refresh requested with no active session")
             throw AuthException.Unauthorized("No active session to refresh")
         }
         return apiCall {
@@ -115,6 +119,7 @@ class DefaultAuthRepository @Inject constructor(
         if (!refreshToken.isNullOrBlank()) {
             // Best effort: revoke server-side, but always clear the local session.
             runCatching { withContext(ioDispatcher) { authApi.logout(LogoutRequest(refreshToken)) } }
+                .onFailure { Log.e(TAG, "Server-side logout failed, clearing local session anyway", it) }
         }
         authPrefs.clear()
     }
@@ -191,12 +196,19 @@ class DefaultAuthRepository @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: HttpException) {
+            Log.e(TAG, "HTTP error calling auth API", e)
             throw e.toAuthException()
         } catch (e: IOException) {
+            Log.e(TAG, "Network error calling auth API", e)
             throw AuthException.Network(e)
         } catch (e: Exception) {
+            Log.e(TAG, "Unexpected error calling auth API", e)
             throw AuthException.Unknown(e.message, e)
         }
+    }
+
+    private companion object {
+        const val TAG = "DefaultAuthRepository"
     }
 
     private fun HttpException.toAuthException(): AuthException {

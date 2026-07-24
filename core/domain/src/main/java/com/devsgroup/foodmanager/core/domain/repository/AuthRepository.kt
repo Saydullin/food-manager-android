@@ -35,6 +35,14 @@ interface AuthRepository {
      */
     val deviceId: Flow<String?>
 
+    /**
+     * Emits when the network layer's silent token-refresh tried to rotate an expired
+     * access token and failed (the refresh token itself was rejected, or the refresh
+     * call errored). Collectors should force a logout and navigate back to the auth
+     * flow — the stored tokens are already unusable.
+     */
+    val sessionExpired: Flow<Unit>
+
     /** Whether [username] is free to register. */
     suspend fun isUsernameAvailable(username: String): Boolean
 

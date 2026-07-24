@@ -11,9 +11,9 @@
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 1000010000,
-      "versionName": "1.0-beta.1",
-      "outputFile": "FoodManager_1.0-beta.1.apk"
+      "versionCode": 1000020000,
+      "versionName": "1.0-beta.2",
+      "outputFile": "FoodManager_1.0-beta.2.apk"
     }
   ],
   "elementType": "File",
@@ -22,14 +22,14 @@
       "minApi": 28,
       "maxApi": 30,
       "baselineProfiles": [
-        "baselineProfiles/1/FoodManager_1.0-beta.1.dm"
+        "baselineProfiles/1/FoodManager_1.0-beta.2.dm"
       ]
     },
     {
       "minApi": 31,
       "maxApi": 2147483647,
       "baselineProfiles": [
-        "baselineProfiles/0/FoodManager_1.0-beta.1.dm"
+        "baselineProfiles/0/FoodManager_1.0-beta.2.dm"
       ]
     }
   ],

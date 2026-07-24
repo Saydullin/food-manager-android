@@ -7,6 +7,8 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.devsgroup.foodmanager.core.common.auth.AuthTokenProvider
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -52,6 +54,11 @@ class AuthPreferencesDataSource @Inject constructor(
         .catch { e -> if (e is IOException) emit(emptyPreferences()) else throw e }
         .map { it[USERNAME] }
 
+    private val _sessionExpired = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+    /** Emits when a silent token refresh (see the network `Authenticator`) failed outright. */
+    val sessionExpired: Flow<Unit> = _sessionExpired.asSharedFlow()
+
     suspend fun updateTokens(accessToken: String, refreshToken: String) {
         dataStore.edit {
             it[ACCESS_TOKEN] = accessToken
@@ -82,6 +89,18 @@ class AuthPreferencesDataSource @Inject constructor(
      */
     override fun accessToken(): String? = runBlocking {
         runCatching { accessTokenFlow.first() }.getOrNull()
+    }
+
+    override fun refreshToken(): String? = runBlocking {
+        runCatching { refreshTokenFlow.first() }.getOrNull()
+    }
+
+    override fun storeTokens(accessToken: String, refreshToken: String) {
+        runBlocking { updateTokens(accessToken, refreshToken) }
+    }
+
+    override fun onSessionExpired() {
+        _sessionExpired.tryEmit(Unit)
     }
 
     private companion object {

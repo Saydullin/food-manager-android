@@ -5,10 +5,14 @@ import androidx.lifecycle.viewModelScope
 import com.devsgroup.foodmanager.core.domain.repository.AuthRepository
 import com.devsgroup.foodmanager.core.domain.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
@@ -31,7 +35,7 @@ sealed interface AppUiState {
  */
 @HiltViewModel
 class AppViewModel @Inject constructor(
-    authRepository: AuthRepository,
+    private val authRepository: AuthRepository,
     settingsRepository: SettingsRepository,
 ) : ViewModel() {
 
@@ -46,4 +50,18 @@ class AppViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = AppUiState.Loading,
         )
+
+    private val _forcedLogoutEvents = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+    /** Tells [com.devsgroup.foodmanager.ui.FoodApp] to navigate back to the auth flow. */
+    val forcedLogoutEvents: SharedFlow<Unit> = _forcedLogoutEvents.asSharedFlow()
+
+    init {
+        viewModelScope.launch {
+            authRepository.sessionExpired.collect {
+                authRepository.logout()
+                _forcedLogoutEvents.emit(Unit)
+            }
+        }
+    }
 }
