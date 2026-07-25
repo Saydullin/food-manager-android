@@ -29,8 +29,12 @@ data class RecommendationUiModel(
     val imageUrl: String,
     val title: String,
     val description: String,
-    /** Short chips over the top-left corner, e.g. "480 ккал", "Вег". */
-    val badges: List<String> = emptyList(),
+    /** Nutrition chips over the top-left corner, e.g. "2 порц.", "480 ккал", "40 г угл.". */
+    val nutritionBadges: List<String> = emptyList(),
+    /** Diet chips on their own row under the nutrition badges, e.g. "Веган". */
+    val dietBadges: List<String> = emptyList(),
+    /** Allergen chips on their own row under the diet badges, e.g. "Орехи". */
+    val allergyBadges: List<String> = emptyList(),
     /** The eyebrow above the title, e.g. ["Острое", "Тайская"]. */
     val categories: List<String> = emptyList(),
     /** Optional personalization hint shown under the card ("Советуем: …"). */
@@ -166,7 +170,13 @@ private fun Food.toUiModel(): RecommendationUiModel = RecommendationUiModel(
     imageUrl = images.firstOrNull().orEmpty(),
     title = name,
     description = description.orEmpty(),
-    badges = listOfNotNull(nutrition?.calories?.let { "$it ккал" }),
+    nutritionBadges = listOfNotNull(
+        nutrition?.servings?.let { "$it порц." },
+        nutrition?.calories?.let { "$it ккал" },
+        nutrition?.carbs?.let { "$it г угл." },
+    ),
+    dietBadges = tags.diets.map(::dietLabel),
+    allergyBadges = tags.allergens.map(::allergenLabel),
     categories = listOfNotNull(cuisine?.let(::cuisineLabel)),
     cuisineCode = cuisine,
 )
@@ -182,5 +192,31 @@ private fun cuisineLabel(code: String): String = when (code) {
     "AMERICAN" -> "Американская"
     "THAI" -> "Тайская"
     "FRENCH" -> "Французская"
+    else -> code
+}
+
+/** Localizes a server diet code; unknown/new codes fall back to the raw code. */
+private fun dietLabel(code: String): String = when (code) {
+    "VEGETARIAN" -> "Вег."
+    "VEGAN" -> "Веган"
+    "GLUTEN_FREE" -> "Без глютена"
+    "DAIRY_FREE" -> "Без молока"
+    "HALAL" -> "Халяль"
+    "KOSHER" -> "Кошер"
+    "LOW_CARB" -> "Мало углеводов"
+    else -> code
+}
+
+/** Localizes a server allergen code; unknown/new codes fall back to the raw code. */
+private fun allergenLabel(code: String): String = when (code) {
+    "NUTS" -> "Орехи"
+    "PEANUTS" -> "Арахис"
+    "MILK" -> "Молоко"
+    "EGGS" -> "Яйца"
+    "FISH" -> "Рыба"
+    "SHELLFISH" -> "Моллюски"
+    "SOY" -> "Соя"
+    "GLUTEN" -> "Глютен"
+    "SESAME" -> "Кунжут"
     else -> code
 }

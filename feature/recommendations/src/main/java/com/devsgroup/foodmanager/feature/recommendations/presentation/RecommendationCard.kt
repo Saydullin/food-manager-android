@@ -40,7 +40,7 @@ private val TextBackdropBlur = 24.dp
  * The recommendation *hero card* from the "Для вас" mock — a full-bleed dish photo
  * with everything else floating on top of it:
  *  - a dark gradient **scrim** so text stays legible over any photo,
- *  - the calorie / diet **badges** in the top-left corner,
+ *  - the nutrition / diet / allergen **badges** in the top-left corner,
  *  - a tracked-out **categories** eyebrow and the big dish **title** at the bottom.
  *
  * It lives in the feature (like [RecommendationActionsBar] and [DislikeReasonSheet])
@@ -123,14 +123,29 @@ internal fun RecommendationCard(
                 ),
         )
 
-        // Top-left badges, laid out horizontally (e.g. "480 ккал", "Вег").
-        Row(
+        // Top-left badges: nutrition (servings/calories/carbs) on top, then diets and
+        // allergens each on their own row below.
+        Column(
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            card.badges.forEach { badge -> OverlayBadge(text = badge) }
+            if (card.nutritionBadges.isNotEmpty()) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    card.nutritionBadges.forEach { badge -> OverlayBadge(text = badge) }
+                }
+            }
+            if (card.dietBadges.isNotEmpty()) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    card.dietBadges.forEach { badge -> OverlayBadge(text = badge) }
+                }
+            }
+            if (card.allergyBadges.isNotEmpty()) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    card.allergyBadges.forEach { badge -> OverlayBadge(text = badge) }
+                }
+            }
         }
 
         // Bottom block: the categories eyebrow, the title, and a short description.
@@ -203,7 +218,8 @@ private fun RecommendationCardPreview() {
                     imageUrl = "",
                     title = "Том Ям с креветками",
                     description = "Острый тайский суп на кокосовом молоке с креветками и грибами.",
-                    badges = listOf("480 ккал", "Остро"),
+                    nutritionBadges = listOf("2 порц.", "480 ккал", "40 г угл."),
+                    dietBadges = listOf("Остро"),
                     categories = listOf("Острое", "Тайская"),
                 ),
                 modifier = Modifier.padding(16.dp),
