@@ -45,3 +45,19 @@
 -if interface * { @retrofit2.http.* <methods>; }
 -keep,allowobfuscation interface <1>
 -keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
+
+# ---------------------------------------------------------------------------
+# Room: RoomDatabase.Builder.build() reflectively instantiates the generated
+# "*_Impl" class for each @Database/@Dao via Room.getGeneratedImplementation().
+# Without this rule R8 strips/renames those classes in release builds, which
+# breaks not just our own AppDatabase but also WorkManager's internal
+# WorkDatabase (it builds its own Room database on WorkManager init), causing
+# a NoSuchMethodException on WorkDatabase_Impl.<init> during Application
+# startup (OutboxScheduler.scheduleSync -> WorkManager.getInstance).
+# ---------------------------------------------------------------------------
+-keep,allowobfuscation class * extends androidx.room.RoomDatabase
+-keep,allowobfuscation class * extends androidx.room3.RoomDatabase
+-if class androidx.room.RoomDatabase
+-keep,includedescriptorclasses class **_Impl { <init>(...); }
+-if class androidx.room3.RoomDatabase
+-keep,includedescriptorclasses class **_Impl { <init>(...); }
