@@ -38,6 +38,11 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
 
+    // Outbox sync worker — durable retry of queued interactions once connectivity returns.
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.hilt.work)
+    ksp(libs.androidx.hilt.compiler)
+
     testImplementation(project(":core:testing"))
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

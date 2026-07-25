@@ -24,9 +24,12 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import com.devsgroup.foodmanager.core.designsystem.theme.FoodManagerTheme
 
 /**
@@ -68,14 +71,22 @@ internal fun RecommendationCard(
     card: RecommendationUiModel,
     modifier: Modifier = Modifier,
 ) {
+    val imageRequest = ImageRequest.Builder(LocalContext.current)
+        .data(card.imageUrl)
+        .crossfade(300)
+        .build()
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .clip(MaterialTheme.shapes.extraLarge),
+            .clip(MaterialTheme.shapes.extraLarge)
+            // Neutral placeholder instead of a hard black flash while the photo loads;
+            // the crossfade above fades the image in over it.
+            .background(MaterialTheme.colorScheme.surfaceVariant),
     ) {
         // The dish photo, cropped to fill the card.
         AsyncImage(
-            model = card.imageUrl,
+            model = imageRequest,
             contentDescription = card.title,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize(),
@@ -87,7 +98,7 @@ internal fun RecommendationCard(
         // a soft, natural falloff instead of a hard-edged panel. The Offscreen layer
         // is what lets DstIn mask *this* copy only, not the sharp photo beneath it.
         AsyncImage(
-            model = card.imageUrl,
+            model = imageRequest,
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier

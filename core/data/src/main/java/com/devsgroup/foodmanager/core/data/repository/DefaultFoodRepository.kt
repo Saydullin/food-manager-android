@@ -5,16 +5,18 @@ import com.devsgroup.foodmanager.core.common.di.Dispatcher
 import com.devsgroup.foodmanager.core.common.di.FoodDispatcher
 import com.devsgroup.foodmanager.core.data.mapper.toDomain
 import com.devsgroup.foodmanager.core.data.mapper.toEntity
+import com.devsgroup.foodmanager.core.data.worker.OutboxScheduler
 import com.devsgroup.foodmanager.core.database.dao.FeedMetaDao
 import com.devsgroup.foodmanager.core.database.dao.FoodDao
+import com.devsgroup.foodmanager.core.database.dao.OutboxDao
 import com.devsgroup.foodmanager.core.database.entity.FeedMetaEntity
+import com.devsgroup.foodmanager.core.database.entity.OutboxEntryEntity
 import com.devsgroup.foodmanager.core.domain.repository.FoodRepository
 import com.devsgroup.foodmanager.core.model.Food
 import com.devsgroup.foodmanager.core.model.FoodException
 import com.devsgroup.foodmanager.core.model.SwipeAction
 import com.devsgroup.foodmanager.core.network.auth.model.ErrorResponse
 import com.devsgroup.foodmanager.core.network.food.FoodApi
-import com.devsgroup.foodmanager.core.network.food.model.InteractionRequestDto
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -36,6 +38,8 @@ class DefaultFoodRepository @Inject constructor(
     private val foodApi: FoodApi,
     private val foodDao: FoodDao,
     private val feedMetaDao: FeedMetaDao,
+    private val outboxDao: OutboxDao,
+    private val outboxScheduler: OutboxScheduler,
     private val json: Json,
     @Dispatcher(FoodDispatcher.IO) private val ioDispatcher: CoroutineDispatcher,
 ) : FoodRepository {
@@ -57,12 +61,17 @@ class DefaultFoodRepository @Inject constructor(
 
     override fun food(id: String): Flow<Food?> = foodDao.observeFood(id).map { it?.toDomain() }
 
+    /**
+     * Outbox pattern: the swipe is durably queued in Room and the card is dropped from the feed
+     * immediately — delivery to the server happens later via [OutboxSyncWorker], so a dropped
+     * connection never loses the interaction or bounces the card back into the deck.
+     */
     override suspend fun recordSwipe(foodId: String, action: SwipeAction, reason: String?, reasonDetail: String?) {
-        apiCall {
-            foodApi.recordInteraction(foodId, InteractionRequestDto(action.name, reason, reasonDetail))
-            // Only drop the card once the server has confirmed the swipe.
+        withContext(ioDispatcher) {
+            outboxDao.insert(OutboxEntryEntity(foodId = foodId, action = action.name, reason = reason, reasonDetail = reasonDetail))
             foodDao.clearFromFeed(foodId)
         }
+        outboxScheduler.scheduleSync()
     }
 
     override suspend fun unlikeFood(foodId: String) {

@@ -30,6 +30,7 @@ immutable = "0.5.1"
 # Persistence (Room 3 uses the new androidx.room3 coordinates and is KSP-only)
 room = "3.0.0"
 datastore = "1.2.1"
+work = "2.10.0"
 
 # Networking
 retrofit = "3.0.0"
@@ -72,6 +73,8 @@ hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref
 hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hilt" }
 hilt-android-testing = { group = "com.google.dagger", name = "hilt-android-testing", version.ref = "hilt" }
 androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
+androidx-hilt-work = { group = "androidx.hilt", name = "hilt-work", version.ref = "hiltNavigationCompose" }
+androidx-hilt-compiler = { group = "androidx.hilt", name = "hilt-compiler", version.ref = "hiltNavigationCompose" }
 javax-inject = { group = "javax.inject", name = "javax.inject", version.ref = "javaxInject" }
 
 # Async / serialization
@@ -86,6 +89,7 @@ kotlinx-collections-immutable = { group = "org.jetbrains.kotlinx", name = "kotli
 androidx-room-runtime = { group = "androidx.room3", name = "room3-runtime", version.ref = "room" }
 androidx-room-compiler = { group = "androidx.room3", name = "room3-compiler", version.ref = "room" }
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
+androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "work" }
 
 # Networking
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
