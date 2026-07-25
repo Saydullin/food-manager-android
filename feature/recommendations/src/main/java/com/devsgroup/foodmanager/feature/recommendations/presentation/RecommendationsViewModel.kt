@@ -12,6 +12,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -80,12 +81,21 @@ class RecommendationsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(RecommendationsUiState())
     val uiState: StateFlow<RecommendationsUiState> = _uiState.asStateFlow()
 
+    /**
+     * Foods swiped locally but not yet confirmed by the server. Filtered out of [cards]
+     * immediately so the deck advances the instant the user taps — [recordSwipe] rolls
+     * a food back out of this set (making it reappear) if the API call fails, since Room
+     * only drops it for real once the server confirms.
+     */
+    private val pendingRemovals = MutableStateFlow<Set<String>>(emptySet())
+
     private var isLoadingPage = false
 
     init {
         viewModelScope.launch {
-            getRecommendedFoodsUseCase().collect { foods ->
-                val cards = foods.map { it.toUiModel() }
+            combine(getRecommendedFoodsUseCase(), pendingRemovals) { foods, pending ->
+                foods.filterNot { pending.contains(it.id) }.map { it.toUiModel() }
+            }.collect { cards ->
                 _uiState.update { it.copy(cards = cards) }
                 maybeLoadMore(cards.size)
             }
@@ -124,16 +134,34 @@ class RecommendationsViewModel @Inject constructor(
         recordSwipe(card.id, SwipeAction.LIKE)
     }
 
+    /** "Попробовать еще" — the deck was exhausted; ask the server for a fresh page. */
+    fun onRetry() {
+        if (isLoadingPage) return
+        isLoadingPage = true
+        viewModelScope.launch {
+            val hasMore = runCatching { loadNextFeedPageUseCase() }
+                .onFailure { Log.e(TAG, "Failed to retry loading feed page", it) }
+                .getOrDefault(true)
+            _uiState.update { it.copy(hasMore = hasMore) }
+            isLoadingPage = false
+        }
+    }
+
     /**
-     * Records the swipe on the server; the card only disappears once that succeeds,
-     * since the repository only clears a dish from the cache after the API call goes
-     * through. The deck's [RecommendationsUiState.cards] Flow then re-emits without
-     * it — no manual "advance" needed.
+     * Optimistically advances the deck — [foodId] is hidden via [pendingRemovals] before
+     * the network call even starts, so the next card shows up instantly instead of
+     * waiting on the round trip. The repository only clears the dish from Room once the
+     * server confirms the swipe, so if the call fails, [foodId] is un-hidden and the
+     * card reappears at the top of the deck.
      */
     private fun recordSwipe(foodId: String, action: SwipeAction, reason: String? = null, reasonDetail: String? = null) {
+        pendingRemovals.update { it + foodId }
         viewModelScope.launch {
             runCatching { recordSwipeUseCase(foodId, action, reason, reasonDetail) }
-                .onFailure { Log.e(TAG, "Failed to record swipe for $foodId", it) }
+                .onFailure {
+                    Log.e(TAG, "Failed to record swipe for $foodId", it)
+                    pendingRemovals.update { pending -> pending - foodId }
+                }
         }
     }
 

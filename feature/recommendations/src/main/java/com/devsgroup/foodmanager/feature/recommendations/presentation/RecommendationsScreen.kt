@@ -1,6 +1,7 @@
 package com.devsgroup.foodmanager.feature.recommendations.presentation
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.EaseIn
 import androidx.compose.animation.core.Spring
@@ -10,6 +11,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
@@ -33,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.devsgroup.foodmanager.core.designsystem.component.FoodButton
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
@@ -80,19 +83,30 @@ internal fun RecommendationsScreen(
                 }
             } else if (uiState.isExhausted) {
                 // Every dish has been reviewed and the server has no more pages left.
-                EmptyDeck(modifier = Modifier.fillMaxSize())
+                EmptyDeck(
+                    onRetry = viewModel::onRetry,
+                    modifier = Modifier.fillMaxSize(),
+                )
             } else {
                 // The deck is momentarily empty while the first/next page is fetched.
                 LoadingDeck(modifier = Modifier.fillMaxSize())
             }
         }
 
-        // The footer molecule; events flow up to the ViewModel (unidirectional data flow).
-        RecommendationActionsBar(
-            onDislike = viewModel::onDislike,
-            onReject = viewModel::onReject,
-            onAddToCart = viewModel::onAddToCart,
-        )
+        // The footer molecule only makes sense while there's a card to act on; once the
+        // deck is exhausted, EmptyDeck's own "Попробовать еще" button replaces it. Animated
+        // rather than a hard toggle, so the bar visibly retreats instead of popping away.
+        AnimatedVisibility(
+            visible = !uiState.isExhausted,
+            enter = fadeIn(tween(durationMillis = 220)),
+            exit = shrinkVertically(tween(durationMillis = 220)) + fadeOut(tween(durationMillis = 180)),
+        ) {
+            RecommendationActionsBar(
+                onDislike = viewModel::onDislike,
+                onReject = viewModel::onReject,
+                onAddToCart = viewModel::onAddToCart,
+            )
+        }
     }
 
     // "Не люблю" sheet — rendered only while the ViewModel says it's open; the
@@ -190,7 +204,7 @@ private fun LoadingDeck(modifier: Modifier = Modifier) {
 
 /** Shown once the user has reviewed every recommendation in the deck. */
 @Composable
-private fun EmptyDeck(modifier: Modifier = Modifier) {
+private fun EmptyDeck(onRetry: () -> Unit, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier.padding(24.dp),
         contentAlignment = Alignment.Center,
@@ -210,6 +224,22 @@ private fun EmptyDeck(modifier: Modifier = Modifier) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
+            // Fades and springs in a beat after the text, so the retry action reads as a
+            // deliberate offer rather than appearing all at once with the empty-state copy.
+            AnimatedVisibility(
+                visible = true,
+                enter = fadeIn(tween(durationMillis = 300, delayMillis = 150)) +
+                    scaleIn(
+                        animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow),
+                        initialScale = 0.85f,
+                    ),
+            ) {
+                FoodButton(
+                    modifier = Modifier.padding(top = 16.dp),
+                    text = "Попробовать еще",
+                    onClick = onRetry,
+                )
+            }
         }
     }
 }
