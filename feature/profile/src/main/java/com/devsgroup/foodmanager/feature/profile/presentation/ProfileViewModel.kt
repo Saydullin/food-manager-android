@@ -54,6 +54,7 @@ data class ProfileUiState(
     val toast: String? = null,
     val toastIsError: Boolean = false,
     val isBanned: Boolean = false,
+    val isRefreshing: Boolean = false,
 )
 
 /** Ephemeral UI-only state that no repository owns: which sheet is open, the toast. */
@@ -61,6 +62,7 @@ private data class LocalUiState(
     val sheet: ProfileSheet? = null,
     val toast: String? = null,
     val toastIsError: Boolean = false,
+    val isRefreshing: Boolean = false,
 )
 
 private data class RepositoryState(
@@ -149,12 +151,36 @@ class ProfileViewModel @Inject constructor(
             toast = local.toast,
             toastIsError = local.toastIsError,
             isBanned = isBanned,
+            isRefreshing = local.isRefreshing,
         )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = ProfileUiState(),
     )
+
+    init {
+        // Refresh-on-launch: the profile repository's cache is process-lifetime, so
+        // without this a returning user would see whatever was fetched last time
+        // instead of picking up server-side changes (e.g. edits from another device).
+        viewModelScope.launch { refreshProfile(showErrorToast = false) }
+    }
+
+    /** Pull-to-refresh entry point from the screen. */
+    fun onRefresh() {
+        viewModelScope.launch { refreshProfile(showErrorToast = true) }
+    }
+
+    private suspend fun refreshProfile(showErrorToast: Boolean) {
+        localState.update { it.copy(isRefreshing = true) }
+        try {
+            profileRepository.refresh()
+        } catch (e: ProfileException) {
+            if (showErrorToast) showToast(e.toDisplayMessage(), isError = true)
+        } finally {
+            localState.update { it.copy(isRefreshing = false) }
+        }
+    }
 
     // --- Sheet visibility -------------------------------------------------
 

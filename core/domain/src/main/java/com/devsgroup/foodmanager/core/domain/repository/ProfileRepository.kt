@@ -14,6 +14,13 @@ interface ProfileRepository {
 
     fun profile(): Flow<UserProfile>
 
+    /**
+     * Forces a fresh fetch from the server and pushes the result into whatever's
+     * currently collecting [profile] — used for refresh-on-launch and pull-to-refresh,
+     * where the process-lifetime cache would otherwise mask server-side changes.
+     */
+    suspend fun refresh()
+
     suspend fun updateProfile(profile: UserProfile)
 
     /**

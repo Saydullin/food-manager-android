@@ -15,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -52,6 +53,7 @@ internal fun ProfileScreen(
 
     ProfileContent(
         uiState = uiState,
+        onRefresh = viewModel::onRefresh,
         onEditProfileClick = onNavigateToEditProfile,
         onAddFavoriteTagClick = viewModel::onAddFavoriteTagClick,
         onRemoveFavoriteTag = viewModel::onRemoveFavoriteTag,
@@ -82,6 +84,7 @@ internal fun ProfileScreen(
 @Composable
 private fun ProfileContent(
     uiState: ProfileUiState,
+    onRefresh: () -> Unit,
     onEditProfileClick: () -> Unit,
     onAddFavoriteTagClick: () -> Unit,
     onRemoveFavoriteTag: (String) -> Unit,
@@ -108,49 +111,55 @@ private fun ProfileContent(
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 18.dp)
-                .padding(top = 8.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(28.dp)
+        PullToRefreshBox(
+            isRefreshing = uiState.isRefreshing,
+            onRefresh = onRefresh,
+            modifier = Modifier.fillMaxSize(),
         ) {
-            ProfileHeader(profile = uiState.profile, isBanned = uiState.isBanned, onEditClick = onEditProfileClick)
-            TasteProfileSection(
-                favoriteTags = uiState.favoriteTags,
-                avoidTags = uiState.avoidTags,
-                dietTags = uiState.dietTags,
-                onAddFavoriteTagClick = onAddFavoriteTagClick,
-                onRemoveFavoriteTag = onRemoveFavoriteTag,
-                onAddAvoidTagClick = onAddAvoidTagClick,
-                onRemoveAvoidTag = onRemoveAvoidTag,
-                onDietClick = onDietClick,
-            )
-            GroupsSection(
-                groups = uiState.groups,
-                onNewGroupClick = onNewGroupClick,
-                onGroupClick = onGroupClick,
-                onDeleteGroup = onDeleteGroup,
-            )
-            MyRecipesSection(
-                recipes = uiState.myRecipes,
-                onCreateClick = onCreateRecipeClick,
-            )
-            LikedDishesSection(
-                likedFoods = uiState.likedFoods,
-                onUnlike = onUnlikeFood,
-            )
-            SettingsSection(
-                notificationsEnabled = uiState.notificationsEnabled,
-                darkThemeEnabled = uiState.darkThemeEnabled,
-                language = uiState.language,
-                onToggleNotifications = onToggleNotifications,
-                onToggleDarkTheme = onToggleDarkTheme,
-                onLanguageClick = onLanguageClick,
-                onHelpClick = onHelpClick,
-                onLogoutClick = onLogoutClick,
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 18.dp)
+                    .padding(top = 8.dp, bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(28.dp)
+            ) {
+                ProfileHeader(profile = uiState.profile, isBanned = uiState.isBanned, onEditClick = onEditProfileClick)
+                TasteProfileSection(
+                    favoriteTags = uiState.favoriteTags,
+                    avoidTags = uiState.avoidTags,
+                    dietTags = uiState.dietTags,
+                    onAddFavoriteTagClick = onAddFavoriteTagClick,
+                    onRemoveFavoriteTag = onRemoveFavoriteTag,
+                    onAddAvoidTagClick = onAddAvoidTagClick,
+                    onRemoveAvoidTag = onRemoveAvoidTag,
+                    onDietClick = onDietClick,
+                )
+                GroupsSection(
+                    groups = uiState.groups,
+                    onNewGroupClick = onNewGroupClick,
+                    onGroupClick = onGroupClick,
+                    onDeleteGroup = onDeleteGroup,
+                )
+                MyRecipesSection(
+                    recipes = uiState.myRecipes,
+                    onCreateClick = onCreateRecipeClick,
+                )
+                LikedDishesSection(
+                    likedFoods = uiState.likedFoods,
+                    onUnlike = onUnlikeFood,
+                )
+                SettingsSection(
+                    notificationsEnabled = uiState.notificationsEnabled,
+                    darkThemeEnabled = uiState.darkThemeEnabled,
+                    language = uiState.language,
+                    onToggleNotifications = onToggleNotifications,
+                    onToggleDarkTheme = onToggleDarkTheme,
+                    onLanguageClick = onLanguageClick,
+                    onHelpClick = onHelpClick,
+                    onLogoutClick = onLogoutClick,
+                )
+            }
         }
 
         ProfileToastHost(
@@ -272,6 +281,7 @@ private fun ProfileScreenPreview() {
                     dietTags = setOf(DietaryTag.VEGETARIAN),
                     groups = listOf(UserGroup(id = "1", emoji = "👨‍👩‍👧", name = "Семья")),
                 ),
+                onRefresh = {},
                 onEditProfileClick = {},
                 onAddFavoriteTagClick = {},
                 onRemoveFavoriteTag = {},

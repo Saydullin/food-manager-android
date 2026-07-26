@@ -77,6 +77,10 @@ class DefaultProfileRepository @Inject constructor(
         }
         .filterNotNull()
 
+    override suspend fun refresh() {
+        cache.value = fetchProfile()
+    }
+
     override suspend fun updateProfile(profile: UserProfile) {
         val currentUsername = cache.value?.username?.removePrefix("@")
         val newUsername = profile.username.removePrefix("@")
