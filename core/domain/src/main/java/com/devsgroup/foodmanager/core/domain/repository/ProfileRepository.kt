@@ -9,6 +9,9 @@ interface ProfileRepository {
     /** True once the account's email has been confirmed by a mailed code. Backed by DataStore. */
     val emailVerified: Flow<Boolean>
 
+    /** True once the server has rejected a request with `ACCOUNT_BANNED`. Backed by DataStore. */
+    val isBanned: Flow<Boolean>
+
     fun profile(): Flow<UserProfile>
 
     suspend fun updateProfile(profile: UserProfile)

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -36,6 +37,7 @@ internal fun ProfileHeader(
     profile: UserProfile,
     onEditClick: () -> Unit,
     modifier: Modifier = Modifier,
+    isBanned: Boolean = false,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -45,11 +47,16 @@ internal fun ProfileHeader(
         ProfileAvatar(profile = profile, modifier = Modifier.size(74.dp))
 
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = profile.name,
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = profile.name,
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+                if (isBanned) {
+                    SuspendedTag()
+                }
+            }
             Text(
                 text = profile.username,
                 style = MaterialTheme.typography.labelLarge,
@@ -70,6 +77,23 @@ internal fun ProfileHeader(
             icon = painterResource(R.drawable.ic_edit),
             contentDescription = "Изменить профиль",
             onClick = onEditClick,
+        )
+    }
+}
+
+/** Small red pill shown next to the name when the account has been suspended. */
+@Composable
+private fun SuspendedTag(modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(6.dp),
+        color = MaterialTheme.colorScheme.error,
+    ) {
+        Text(
+            text = "заблокирован",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onError,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
         )
     }
 }

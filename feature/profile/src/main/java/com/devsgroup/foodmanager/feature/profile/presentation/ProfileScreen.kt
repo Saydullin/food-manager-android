@@ -116,7 +116,7 @@ private fun ProfileContent(
                 .padding(top = 8.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(28.dp)
         ) {
-            ProfileHeader(profile = uiState.profile, onEditClick = onEditProfileClick)
+            ProfileHeader(profile = uiState.profile, isBanned = uiState.isBanned, onEditClick = onEditProfileClick)
             TasteProfileSection(
                 favoriteTags = uiState.favoriteTags,
                 avoidTags = uiState.avoidTags,

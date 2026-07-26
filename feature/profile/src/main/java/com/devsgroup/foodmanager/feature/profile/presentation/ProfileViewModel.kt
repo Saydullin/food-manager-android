@@ -53,6 +53,7 @@ data class ProfileUiState(
     val sheet: ProfileSheet? = null,
     val toast: String? = null,
     val toastIsError: Boolean = false,
+    val isBanned: Boolean = false,
 )
 
 /** Ephemeral UI-only state that no repository owns: which sheet is open, the toast. */
@@ -131,7 +132,8 @@ class ProfileViewModel @Inject constructor(
         repositoryState,
         settingsState,
         localState,
-    ) { repo, settings, local ->
+        profileRepository.isBanned,
+    ) { repo, settings, local, isBanned ->
         ProfileUiState(
             profile = repo.profile,
             favoriteTags = repo.favoriteTags,
@@ -146,6 +148,7 @@ class ProfileViewModel @Inject constructor(
             sheet = local.sheet,
             toast = local.toast,
             toastIsError = local.toastIsError,
+            isBanned = isBanned,
         )
     }.stateIn(
         scope = viewModelScope,

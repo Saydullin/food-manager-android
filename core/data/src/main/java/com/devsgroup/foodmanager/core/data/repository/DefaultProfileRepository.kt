@@ -3,6 +3,7 @@ package com.devsgroup.foodmanager.core.data.repository
 import com.devsgroup.foodmanager.core.common.di.Dispatcher
 import com.devsgroup.foodmanager.core.common.di.FoodDispatcher
 import com.devsgroup.foodmanager.core.data.mapper.toDomain
+import com.devsgroup.foodmanager.core.datastore.AuthPreferencesDataSource
 import com.devsgroup.foodmanager.core.datastore.ProfilePreferencesDataSource
 import com.devsgroup.foodmanager.core.domain.repository.ProfileRepository
 import com.devsgroup.foodmanager.core.model.ProfileException
@@ -46,6 +47,7 @@ class DefaultProfileRepository @Inject constructor(
     private val profileApi: ProfileApi,
     private val uploadApi: UploadApi,
     private val profilePrefs: ProfilePreferencesDataSource,
+    private val authPrefs: AuthPreferencesDataSource,
     private val json: Json,
     @Dispatcher(FoodDispatcher.IO) private val ioDispatcher: CoroutineDispatcher,
 ) : ProfileRepository {
@@ -53,6 +55,8 @@ class DefaultProfileRepository @Inject constructor(
     private val cache = MutableStateFlow<UserProfile?>(null)
 
     override val emailVerified: Flow<Boolean> = profilePrefs.profileFlow.map { it?.emailVerified ?: false }
+
+    override val isBanned: Flow<Boolean> = authPrefs.accountBannedFlow
 
     override fun invalidateCache() {
         cache.value = null

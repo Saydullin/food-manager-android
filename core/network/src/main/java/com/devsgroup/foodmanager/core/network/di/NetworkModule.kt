@@ -4,6 +4,7 @@ import android.util.Log
 import com.devsgroup.foodmanager.core.network.NetworkConfig
 import com.devsgroup.foodmanager.core.network.auth.AuthApi
 import com.devsgroup.foodmanager.core.network.food.FoodApi
+import com.devsgroup.foodmanager.core.network.interceptor.AccountBanInterceptor
 import com.devsgroup.foodmanager.core.network.interceptor.AuthInterceptor
 import com.devsgroup.foodmanager.core.network.interceptor.TokenRefreshAuthenticator
 import com.devsgroup.foodmanager.core.network.profile.ProfileApi
@@ -75,10 +76,12 @@ object NetworkModule {
     fun providesOkHttpClient(
         authInterceptor: AuthInterceptor,
         tokenRefreshAuthenticator: TokenRefreshAuthenticator,
+        accountBanInterceptor: AccountBanInterceptor,
     ): OkHttpClient =
         OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
             .authenticator(tokenRefreshAuthenticator)
+            .addInterceptor(accountBanInterceptor)
             .addInterceptor(loggingInterceptor())
             .build()
 

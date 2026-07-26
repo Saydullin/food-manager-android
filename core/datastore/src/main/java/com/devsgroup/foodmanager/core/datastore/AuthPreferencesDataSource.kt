@@ -2,9 +2,11 @@ package com.devsgroup.foodmanager.core.datastore
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.devsgroup.foodmanager.core.common.auth.AccountBanNotifier
 import com.devsgroup.foodmanager.core.common.auth.AuthTokenProvider
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -25,7 +27,7 @@ import javax.inject.Singleton
 @Singleton
 class AuthPreferencesDataSource @Inject constructor(
     private val dataStore: DataStore<Preferences>,
-) : AuthTokenProvider {
+) : AuthTokenProvider, AccountBanNotifier {
 
     val accessTokenFlow: Flow<String?> = dataStore.data
         .catch { e -> if (e is IOException) emit(emptyPreferences()) else throw e }
@@ -58,6 +60,15 @@ class AuthPreferencesDataSource @Inject constructor(
 
     /** Emits when a silent token refresh (see the network `Authenticator`) failed outright. */
     val sessionExpired: Flow<Unit> = _sessionExpired.asSharedFlow()
+
+    /**
+     * True once the server has rejected a request with `ACCOUNT_BANNED` (see the
+     * network response interceptor). Persisted rather than in-memory so the ban
+     * still shows after a process restart, without requiring another failed call.
+     */
+    val accountBannedFlow: Flow<Boolean> = dataStore.data
+        .catch { e -> if (e is IOException) emit(emptyPreferences()) else throw e }
+        .map { it[ACCOUNT_BANNED] ?: false }
 
     suspend fun updateTokens(accessToken: String, refreshToken: String) {
         dataStore.edit {
@@ -103,10 +114,15 @@ class AuthPreferencesDataSource @Inject constructor(
         _sessionExpired.tryEmit(Unit)
     }
 
+    override fun onAccountBanned() {
+        runBlocking { dataStore.edit { it[ACCOUNT_BANNED] = true } }
+    }
+
     private companion object {
         val ACCESS_TOKEN = stringPreferencesKey("auth_access_token")
         val REFRESH_TOKEN = stringPreferencesKey("auth_refresh_token")
         val DEVICE_ID = stringPreferencesKey("auth_device_id")
         val USERNAME = stringPreferencesKey("auth_username")
+        val ACCOUNT_BANNED = booleanPreferencesKey("auth_account_banned")
     }
 }

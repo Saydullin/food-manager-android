@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
+import com.devsgroup.foodmanager.core.common.auth.AccountBanNotifier
 import com.devsgroup.foodmanager.core.common.auth.AuthTokenProvider
 import com.devsgroup.foodmanager.core.datastore.AuthPreferencesDataSource
 import dagger.Binds
@@ -23,6 +24,11 @@ abstract class DataStoreModule {
     @Binds
     @Singleton
     abstract fun bindsAuthTokenProvider(impl: AuthPreferencesDataSource): AuthTokenProvider
+
+    /** Exposes the token store's [AccountBanNotifier] role to the network interceptor. */
+    @Binds
+    @Singleton
+    abstract fun bindsAccountBanNotifier(impl: AuthPreferencesDataSource): AccountBanNotifier
 
     companion object {
         @Provides
