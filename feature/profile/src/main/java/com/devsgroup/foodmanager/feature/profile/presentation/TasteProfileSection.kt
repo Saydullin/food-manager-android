@@ -1,5 +1,6 @@
 package com.devsgroup.foodmanager.feature.profile.presentation
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -59,16 +60,19 @@ internal fun TasteProfileSection(
             label = "ПРЕДПОЧТЕНИЯ",
             onAddClick = onAddFavoriteTagClick,
         )
-        if (favoriteTags.isNotEmpty()) {
-            FlowRow(
-                modifier = Modifier.padding(top = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                favoriteTags.forEach { tag ->
-                    FoodTagChip(label = tag, onRemove = { onRemoveFavoriteTag(tag) })
-                }
-            }
+        AnimatedItemList(
+            items = favoriteTags.toList(),
+            keySelector = { it },
+            layout = { content ->
+                FlowRow(
+                    modifier = Modifier.padding(top = 8.dp).animateContentSize(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    content = { content() },
+                )
+            },
+        ) { tag ->
+            FoodTagChip(label = tag, onRemove = { onRemoveFavoriteTag(tag) })
         }
 
         HorizontalDivider(
@@ -79,17 +83,21 @@ internal fun TasteProfileSection(
             label = "ИСКЛЮЧЕНИЯ",
             onAddClick = onAddAvoidTagClick,
         )
-        if (avoidTags.isNotEmpty()) {
-            FlowRow(
-                modifier = Modifier.padding(top = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                avoidTags.forEach { tag ->
-                    FoodTagChip(label = tag, tone = FoodChipTone.Destructive, onRemove = { onRemoveAvoidTag(tag) })
-                }
-            }
-        } else {
+        AnimatedItemList(
+            items = avoidTags.toList(),
+            keySelector = { it },
+            layout = { content ->
+                FlowRow(
+                    modifier = Modifier.padding(top = 8.dp).animateContentSize(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    content = { content() },
+                )
+            },
+        ) { tag ->
+            FoodTagChip(label = tag, tone = FoodChipTone.Destructive, onRemove = { onRemoveAvoidTag(tag) })
+        }
+        if (avoidTags.isEmpty()) {
             Text(
                 text = "Пока ничего — свайпайте «Не то», и мы запомним.",
                 style = MaterialTheme.typography.bodySmall,
@@ -107,17 +115,21 @@ internal fun TasteProfileSection(
             onAddClick = onDietClick,
             buttonText = if (dietTags.isNotEmpty()) "Изменить" else "Добавить",
         )
-        if (dietTags.isNotEmpty()) {
-            FlowRow(
-                modifier = Modifier.padding(top = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                dietTags.forEach { tag ->
-                    FoodTagChip(label = tag.label, tone = FoodChipTone.Neutral, leadingEmoji = tag.emoji)
-                }
-            }
-        } else {
+        AnimatedItemList(
+            items = dietTags.toList(),
+            keySelector = { it },
+            layout = { content ->
+                FlowRow(
+                    modifier = Modifier.padding(top = 8.dp).animateContentSize(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    content = { content() },
+                )
+            },
+        ) { tag ->
+            FoodTagChip(label = tag.label, tone = FoodChipTone.Neutral, leadingEmoji = tag.emoji)
+        }
+        if (dietTags.isEmpty()) {
             Text(
                 text = "Полная свобода, никаких диет",
                 style = MaterialTheme.typography.bodySmall,

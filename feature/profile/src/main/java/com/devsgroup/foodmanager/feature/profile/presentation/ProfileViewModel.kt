@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 /** Which bottom sheet (if any) is open. Mutually exclusive, matching the design. */
@@ -188,21 +189,23 @@ class ProfileViewModel @Inject constructor(
     fun onSubmitFavoriteTag() {
         val tag = (localState.value.sheet as? ProfileSheet.AddFavoriteTag)?.input?.trim()
         if (tag.isNullOrBlank()) return
+        openSheet(null)
         viewModelScope.launch {
+            delay(TAG_ENTRANCE_DELAY.inWholeMilliseconds)
             val current = tasteProfileRepository.tasteProfile().first()
             tasteProfileRepository.updateTasteProfile(current.copy(favoriteTags = current.favoriteTags + tag))
         }
-        openSheet(null)
     }
 
     fun onSubmitAvoidTag() {
         val tag = (localState.value.sheet as? ProfileSheet.AddAvoidTag)?.input?.trim()
         if (tag.isNullOrBlank()) return
+        openSheet(null)
         viewModelScope.launch {
+            delay(TAG_ENTRANCE_DELAY.inWholeMilliseconds)
             val current = tasteProfileRepository.tasteProfile().first()
             tasteProfileRepository.updateTasteProfile(current.copy(avoidTags = current.avoidTags + tag))
         }
-        openSheet(null)
     }
 
     fun onRemoveFavoriteTag(tag: String) {
@@ -232,11 +235,12 @@ class ProfileViewModel @Inject constructor(
     fun onSubmitNewGroup() {
         val name = (localState.value.sheet as? ProfileSheet.NewGroup)?.input?.trim()
         if (name.isNullOrBlank()) return
+        openSheet(null)
         viewModelScope.launch {
+            delay(TAG_ENTRANCE_DELAY.inWholeMilliseconds)
             groupRepository.createGroup(name)
             showToast("Группа «$name» создана")
         }
-        openSheet(null)
     }
 
     fun onDeleteGroup(group: UserGroup) {
@@ -302,5 +306,8 @@ class ProfileViewModel @Inject constructor(
 
     private companion object {
         val TOAST_DURATION = 2.seconds
+
+        /** Sheet-close animation (~300ms) plus the requested 100ms pause before the new item animates in. */
+        val TAG_ENTRANCE_DELAY = 400.milliseconds
     }
 }

@@ -93,11 +93,12 @@ internal fun RecommendationsScreen(
             }
         }
 
-        // The footer molecule only makes sense while there's a card to act on; once the
-        // deck is exhausted, EmptyDeck's own "Попробовать еще" button replaces it. Animated
-        // rather than a hard toggle, so the bar visibly retreats instead of popping away.
+        // The footer molecule only makes sense while there's a card to act on — hidden during
+        // the initial/refill load and once the deck is exhausted (EmptyDeck's own
+        // "Попробовать еще" button replaces it then). Animated rather than a hard toggle, so
+        // the bar visibly retreats instead of popping away.
         AnimatedVisibility(
-            visible = !uiState.isExhausted,
+            visible = uiState.currentCard != null,
             enter = fadeIn(tween(durationMillis = 220)),
             exit = shrinkVertically(tween(durationMillis = 220)) + fadeOut(tween(durationMillis = 180)),
         ) {

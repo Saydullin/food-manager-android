@@ -1,5 +1,6 @@
 package com.devsgroup.foodmanager.feature.profile.presentation
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -62,17 +63,22 @@ internal fun GroupsSection(
                 modifier = Modifier.padding(top = 13.dp),
             )
         } else {
-            Column(
-                modifier = Modifier.padding(top = 13.dp),
-                verticalArrangement = Arrangement.spacedBy(9.dp),
-            ) {
-                groups.forEach { group ->
-                    GroupRow(
-                        group = group,
-                        onClick = { onGroupClick(group) },
-                        onDelete = { onDeleteGroup(group) },
+            AnimatedItemList(
+                items = groups,
+                keySelector = { it.id },
+                layout = { content ->
+                    Column(
+                        modifier = Modifier.padding(top = 13.dp).animateContentSize(),
+                        verticalArrangement = Arrangement.spacedBy(9.dp),
+                        content = { content() },
                     )
-                }
+                },
+            ) { group ->
+                GroupRow(
+                    group = group,
+                    onClick = { onGroupClick(group) },
+                    onDelete = { onDeleteGroup(group) },
+                )
             }
         }
     }

@@ -8,20 +8,31 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import com.devsgroup.foodmanager.core.designsystem.R
 import com.devsgroup.foodmanager.core.designsystem.component.FoodIconButton
 import com.devsgroup.foodmanager.core.designsystem.theme.FoodManagerTheme
@@ -102,12 +113,35 @@ private fun SuspendedTag(modifier: Modifier = Modifier) {
 private fun ProfileAvatar(profile: UserProfile, modifier: Modifier = Modifier) {
     val avatarUrl = profile.avatarUrl
     if (avatarUrl != null) {
-        AsyncImage(
-            model = avatarUrl,
-            contentDescription = profile.name,
-            contentScale = ContentScale.Crop,
-            modifier = modifier.clip(CircleShape),
+        var isLoaded by remember(avatarUrl) { mutableStateOf(false) }
+        val alpha by animateFloatAsState(
+            targetValue = if (isLoaded) 1f else 0f,
+            animationSpec = tween(durationMillis = 300),
+            label = "avatarAlpha",
         )
+        val imageRequest = ImageRequest.Builder(LocalContext.current)
+            .data(avatarUrl)
+            .crossfade(true)
+            .build()
+
+        Box(modifier = modifier.clip(CircleShape)) {
+            // Neutral placeholder shown until the photo finishes loading, so the
+            // avatar fades in instead of popping in over a blank circle.
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+            )
+            AsyncImage(
+                model = imageRequest,
+                contentDescription = profile.name,
+                contentScale = ContentScale.Crop,
+                onSuccess = { isLoaded = true },
+                modifier = Modifier
+                    .matchParentSize()
+                    .alpha(alpha),
+            )
+        }
     } else {
         Surface(
             modifier = modifier,
