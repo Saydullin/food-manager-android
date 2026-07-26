@@ -112,8 +112,10 @@ internal fun RecommendationsScreen(
 
     // "Не люблю" sheet — rendered only while the ViewModel says it's open; the
     // same UDF loop closes it on a reason pick or a dismiss.
-    if (uiState.showDislikeSheet) {
+    val cardForDislike = uiState.currentCard
+    if (uiState.showDislikeSheet && cardForDislike != null) {
         DislikeReasonSheet(
+            reasons = buildDislikeReasons(cardForDislike),
             onReasonSelected = viewModel::onDislikeReasonSelected,
             onDismiss = viewModel::onDislikeSheetDismiss,
         )
