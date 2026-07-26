@@ -32,4 +32,5 @@ data class FoodEntity(
     val createdAt: String,
     val updatedAt: String,
     val feedPosition: Int?,
+    val liked: Boolean = false,
 )

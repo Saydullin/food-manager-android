@@ -20,7 +20,6 @@ import com.devsgroup.foodmanager.core.network.food.FoodApi
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -57,7 +56,8 @@ class DefaultFoodRepository @Inject constructor(
         response.hasMore
     }
 
-    override fun likedFoods(): Flow<List<Food>> = flowOf(emptyList())
+    override fun likedFoods(): Flow<List<Food>> =
+        foodDao.observeLiked().map { entities -> entities.map { it.toDomain() } }
 
     override fun food(id: String): Flow<Food?> = foodDao.observeFood(id).map { it?.toDomain() }
 
@@ -70,12 +70,21 @@ class DefaultFoodRepository @Inject constructor(
         withContext(ioDispatcher) {
             outboxDao.insert(OutboxEntryEntity(foodId = foodId, action = action.name, reason = reason, reasonDetail = reasonDetail))
             foodDao.clearFromFeed(foodId)
+            if (action == SwipeAction.LIKE) foodDao.setLiked(foodId, true)
         }
         outboxScheduler.scheduleSync()
     }
 
+    /**
+     * Same outbox pattern as [recordSwipe]: the dish drops out of [likedFoods] immediately,
+     * durably queued so [OutboxSyncWorker] can tell the server later (even offline).
+     */
     override suspend fun unlikeFood(foodId: String) {
-        // TODO: persist locally once liked foods are backed by Room.
+        withContext(ioDispatcher) {
+            foodDao.setLiked(foodId, false)
+            outboxDao.insert(OutboxEntryEntity(foodId = foodId, action = UNLIKE_ACTION, reason = null, reasonDetail = null))
+        }
+        outboxScheduler.scheduleSync()
     }
 
     /** Runs [block] on the IO dispatcher and normalizes failures to [FoodException]. */
@@ -123,3 +132,6 @@ class DefaultFoodRepository @Inject constructor(
         const val FEED_PAGE_SIZE = 10
     }
 }
+
+/** Outbox action for [DefaultFoodRepository.unlikeFood] — not a [SwipeAction], so [OutboxSyncWorker] routes it to `DELETE .../interactions` instead of `POST`. */
+const val UNLIKE_ACTION = "UNLIKE"

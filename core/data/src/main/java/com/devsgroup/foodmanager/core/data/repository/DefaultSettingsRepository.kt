@@ -30,7 +30,7 @@ class DefaultSettingsRepository @Inject constructor(
     }
 
     override fun language(): Flow<AppLanguage> = settingsPrefs.language.map { name ->
-        name?.let { runCatching { AppLanguage.valueOf(it) }.getOrNull() } ?: AppLanguage.RUSSIAN
+        name?.let { runCatching { AppLanguage.valueOf(it) }.getOrNull() } ?: AppLanguage.systemDefault()
     }
 
     override suspend fun setLanguage(language: AppLanguage) {

@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.devsgroup.foodmanager.core.data.repository.UNLIKE_ACTION
 import com.devsgroup.foodmanager.core.database.dao.OutboxDao
 import com.devsgroup.foodmanager.core.database.entity.OutboxEntryEntity
 import com.devsgroup.foodmanager.core.network.food.FoodApi
@@ -35,10 +36,14 @@ class OutboxSyncWorker @AssistedInject constructor(
 
     private suspend fun sendEntry(entry: OutboxEntryEntity): Result {
         try {
-            foodApi.recordInteraction(
-                entry.foodId,
-                InteractionRequestDto(entry.action, entry.reason, entry.reasonDetail),
-            )
+            if (entry.action == UNLIKE_ACTION) {
+                foodApi.deleteInteraction(entry.foodId)
+            } else {
+                foodApi.recordInteraction(
+                    entry.foodId,
+                    InteractionRequestDto(entry.action, entry.reason, entry.reasonDetail),
+                )
+            }
             outboxDao.delete(entry)
             return Result.success()
         } catch (e: IOException) {

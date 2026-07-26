@@ -6,6 +6,7 @@ ksp = "2.3.9"
 
 # AndroidX core / lifecycle / activity
 coreKtx = "1.19.0"
+appcompat = "1.7.1"
 lifecycle = "2.11.0"
 activityCompose = "1.13.0"
 
@@ -49,6 +50,7 @@ mockk = "1.14.11"
 [libraries]
 # AndroidX core / lifecycle / activity
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
 androidx-lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycle" }
 androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycle" }

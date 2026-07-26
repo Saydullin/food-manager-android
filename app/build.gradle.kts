@@ -112,6 +112,8 @@ dependencies {
 
     // Core / lifecycle
     implementation(libs.androidx.core.ktx)
+    // AppCompatDelegate.setApplicationLocales — per-app language switching without AppCompatActivity.
+    implementation(libs.androidx.appcompat)
 
     // DI
     implementation(libs.hilt.android)

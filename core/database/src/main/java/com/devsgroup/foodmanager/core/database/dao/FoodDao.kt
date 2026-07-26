@@ -16,6 +16,10 @@ interface FoodDao {
     @Query("SELECT * FROM foods WHERE id = :id")
     fun observeFood(id: String): Flow<FoodEntity?>
 
+    /** Liked dishes ("Сохранённое"), most recently updated first. */
+    @Query("SELECT * FROM foods WHERE liked = 1 ORDER BY updatedAt DESC")
+    fun observeLiked(): Flow<List<FoodEntity>>
+
     /** Highest position currently assigned, so a newly-fetched page can continue the sequence. */
     @Query("SELECT MAX(feedPosition) FROM foods")
     suspend fun maxFeedPosition(): Int?
@@ -26,4 +30,7 @@ interface FoodDao {
     /** Drops a dish from the cached feed (after a swipe) without deleting its cached detail. */
     @Query("UPDATE foods SET feedPosition = NULL WHERE id = :id")
     suspend fun clearFromFeed(id: String)
+
+    @Query("UPDATE foods SET liked = :liked WHERE id = :id")
+    suspend fun setLiked(id: String, liked: Boolean)
 }

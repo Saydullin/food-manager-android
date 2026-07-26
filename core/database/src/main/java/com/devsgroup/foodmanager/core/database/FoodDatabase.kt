@@ -11,7 +11,7 @@ import com.devsgroup.foodmanager.core.database.entity.OutboxEntryEntity
 
 @Database(
     entities = [FoodEntity::class, FeedMetaEntity::class, OutboxEntryEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 abstract class FoodDatabase : RoomDatabase() {
