@@ -109,11 +109,11 @@ class RecommendationsViewModel @Inject constructor(
         _uiState.update { it.copy(showDislikeSheet = true) }
     }
 
-    /** A reason was chosen in the sheet: record the negative signal, close it, advance. */
-    fun onDislikeReasonSelected(reason: DislikeReason) {
+    /** Reasons were chosen in the sheet: record one negative signal per reason, close it, advance. */
+    fun onDislikeReasonsSelected(reasons: List<DislikeReason>) {
         val card = uiState.value.currentCard ?: return
         _uiState.update { it.copy(showDislikeSheet = false, lastVerdict = RecommendationVerdict.DISLIKED) }
-        recordSwipe(card.id, SwipeAction.DISLIKE, reason.code, reason.detail)
+        reasons.forEach { reason -> recordSwipe(card.id, SwipeAction.DISLIKE, reason.code, reason.detail) }
     }
 
     /** Sheet dismissed without a choice (scrim tap, swipe-down, or back). */

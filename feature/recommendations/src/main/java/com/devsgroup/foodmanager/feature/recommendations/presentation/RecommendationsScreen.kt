@@ -116,7 +116,7 @@ internal fun RecommendationsScreen(
     if (uiState.showDislikeSheet && cardForDislike != null) {
         DislikeReasonSheet(
             reasons = buildDislikeReasons(cardForDislike),
-            onReasonSelected = viewModel::onDislikeReasonSelected,
+            onReasonsSelected = viewModel::onDislikeReasonsSelected,
             onDismiss = viewModel::onDislikeSheetDismiss,
         )
     }

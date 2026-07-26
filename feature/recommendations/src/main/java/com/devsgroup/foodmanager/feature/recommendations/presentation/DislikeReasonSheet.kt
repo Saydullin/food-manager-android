@@ -3,7 +3,11 @@ package com.devsgroup.foodmanager.feature.recommendations.presentation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -15,8 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.devsgroup.foodmanager.core.designsystem.component.FoodButton
 import com.devsgroup.foodmanager.core.designsystem.component.FoodModalBottomSheet
-import com.devsgroup.foodmanager.core.designsystem.component.FoodOutlinedButton
 import com.devsgroup.foodmanager.core.designsystem.component.FoodTextField
+import com.devsgroup.foodmanager.core.designsystem.component.FoodToggleChip
 
 /**
  * A reason a user can give for disliking a recommended dish. The choice is a
@@ -47,7 +51,7 @@ data class DislikeReason(
 /** Builds the dish-specific dislike reasons for [card]: one per tag it carries, then cuisine, then "Другое" last. */
 internal fun buildDislikeReasons(card: RecommendationUiModel): List<DislikeReason> {
     val tagReasons = card.tagCodes.map { code ->
-        DislikeReason(code = "DISLIKE_TAG", detail = code, label = "Не нравится ${tagLabel(code)}")
+        DislikeReason(code = "DISLIKE_TAG", detail = code, label = tagLabel(code).replaceFirstChar { it.uppercase() })
     }
     val cuisineReason = card.cuisineCode?.let { code ->
         DislikeReason(code = "WRONG_CUISINE", detail = code, label = "Не та кухня")
@@ -81,22 +85,30 @@ private fun tagLabel(code: String): String = when (code) {
 /**
  * The "Не люблю" bottom sheet — a feature *molecule* that asks *why* the user
  * disliked the current card so the answer can sharpen future recommendations.
+ * The reasons are a multi-choice grid — a dish can miss for more than one reason
+ * at once (e.g. both "острое" and "не та кухня") — submitted together via
+ * [onReasonsSelected] once the user taps "Отправить".
  *
  * It lives in the feature (like [RecommendationActionsBar]) because [reasons] are
  * specific to the recommendations flow, and it is built only from design-system
- * atoms ([FoodModalBottomSheet], [FoodOutlinedButton], [FoodTextField], [FoodButton]).
- * It stays UI-only: it emits the chosen reason and a dismiss event and holds no
- * state itself beyond the in-progress "Other" text — visibility and recording live
+ * atoms ([FoodModalBottomSheet], [FoodToggleChip], [FoodTextField], [FoodButton]).
+ * It stays UI-only: it emits the chosen reasons and a dismiss event and holds no
+ * state itself beyond the in-progress selection — visibility and recording live
  * in [RecommendationsViewModel].
  */
 @Composable
 internal fun DislikeReasonSheet(
     reasons: List<DislikeReason>,
-    onReasonSelected: (DislikeReason) -> Unit,
+    onReasonsSelected: (List<DislikeReason>) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var selected by rememberSaveable { mutableStateOf<Set<String>>(emptySet()) }
     var otherDetail by rememberSaveable { mutableStateOf<String?>(null) }
+
+    val other = reasons.lastOrNull { it.isOther }
+    val gridReasons = reasons.filterNot { it.isOther }
+    val hasSelection = selected.isNotEmpty() || (other != null && !otherDetail.orEmpty().isBlank())
 
     FoodModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -107,43 +119,50 @@ internal fun DislikeReasonSheet(
             style = MaterialTheme.typography.headlineSmall,
         )
         Text(
-            text = "Выберите причину — рекомендации станут точнее.",
+            text = "Выберите одну или несколько причин — рекомендации станут точнее.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 4.dp, bottom = 16.dp),
         )
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            reasons.forEach { reason ->
-                if (reason.isOther) return@forEach
-                FoodOutlinedButton(
-                    modifier = Modifier.fillMaxWidth(),
-                    text = reason.label,
-                    onClick = { onReasonSelected(reason) },
-                )
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.heightIn(max = 320.dp),
+            ) {
+                items(gridReasons, key = { it.detail ?: it.code }) { reason ->
+                    val key = reason.detail ?: reason.code
+                    FoodToggleChip(
+                        modifier = Modifier.fillMaxWidth(),
+                        label = reason.label,
+                        selected = key in selected,
+                        onClick = {
+                            selected = if (key in selected) selected - key else selected + key
+                        },
+                    )
+                }
             }
 
-            val other = reasons.lastOrNull { it.isOther } ?: return@Column
-            if (otherDetail == null) {
-                FoodOutlinedButton(
-                    modifier = Modifier.fillMaxWidth(),
-                    text = other.label,
-                    onClick = { otherDetail = "" },
-                )
-            } else {
+            if (other != null) {
                 FoodTextField(
                     value = otherDetail.orEmpty(),
                     onValueChange = { otherDetail = it },
                     label = other.label,
-                    placeholder = "Опишите причину",
-                    isRequired = true,
-                )
-                FoodButton(
-                    modifier = Modifier.fillMaxWidth(),
-                    text = "Отправить",
-                    enabled = otherDetail.orEmpty().isNotBlank(),
-                    onClick = { onReasonSelected(other.copy(detail = otherDetail)) },
+                    placeholder = "Опишите причину (необязательно)",
                 )
             }
+
+            FoodButton(
+                modifier = Modifier.fillMaxWidth(),
+                text = "Отправить",
+                enabled = hasSelection,
+                onClick = {
+                    val chosen = gridReasons.filter { (it.detail ?: it.code) in selected } +
+                        listOfNotNull(other?.takeIf { !otherDetail.orEmpty().isBlank() }?.copy(detail = otherDetail))
+                    onReasonsSelected(chosen)
+                },
+            )
         }
     }
 }
