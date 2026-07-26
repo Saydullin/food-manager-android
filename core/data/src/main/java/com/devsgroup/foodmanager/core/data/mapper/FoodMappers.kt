@@ -19,6 +19,8 @@ fun FoodDto.toDomain() = Food(
     tags = tags.toDomain(),
     createdAt = createdAt,
     updatedAt = updatedAt,
+    language = language,
+    availableLanguages = availableLanguages,
 )
 
 internal fun NutritionDto.toDomain() = Nutrition(

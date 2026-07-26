@@ -42,6 +42,8 @@ data class RecommendationUiModel(
     val tip: String? = null,
     /** The raw server cuisine code (e.g. `"THAI"`), for the "wrong cuisine" dislike reason. */
     val cuisineCode: String? = null,
+    /** Every raw tag/allergen/diet code this dish carries, for building per-dish dislike reasons. */
+    val tagCodes: List<String> = emptyList(),
 )
 
 /**
@@ -111,8 +113,7 @@ class RecommendationsViewModel @Inject constructor(
     fun onDislikeReasonSelected(reason: DislikeReason) {
         val card = uiState.value.currentCard ?: return
         _uiState.update { it.copy(showDislikeSheet = false, lastVerdict = RecommendationVerdict.DISLIKED) }
-        val (reasonCode, reasonDetail) = reason.toBackendReason(card)
-        recordSwipe(card.id, SwipeAction.DISLIKE, reasonCode, reasonDetail)
+        recordSwipe(card.id, SwipeAction.DISLIKE, reason.code, reason.detail)
     }
 
     /** Sheet dismissed without a choice (scrim tap, swipe-down, or back). */
@@ -184,15 +185,6 @@ class RecommendationsViewModel @Inject constructor(
     }
 }
 
-/** Maps a [DislikeReason] to the server's `(reason, reasonDetail)` codes for this [card]. */
-private fun DislikeReason.toBackendReason(card: RecommendationUiModel): Pair<String, String?> = when (this) {
-    DislikeReason.TooSpicy -> "DISLIKE_TAG" to "SPICY"
-    // "Wrong cuisine" naturally means *this dish's* cuisine; fall back to OTHER if it has none.
-    DislikeReason.Cuisine -> if (card.cuisineCode != null) "WRONG_CUISINE" to card.cuisineCode else "OTHER" to null
-    DislikeReason.AlreadyTried -> "ALREADY_ATE" to null
-    DislikeReason.Ingredients, DislikeReason.Other -> "OTHER" to null
-}
-
 private fun Food.toUiModel(): RecommendationUiModel = RecommendationUiModel(
     id = id,
     imageUrl = images.firstOrNull().orEmpty(),
@@ -207,6 +199,8 @@ private fun Food.toUiModel(): RecommendationUiModel = RecommendationUiModel(
     allergyBadges = tags.allergens.map(::allergenLabel),
     categories = listOfNotNull(cuisine?.let(::cuisineLabel)),
     cuisineCode = cuisine,
+    tagCodes = (tags.diets + tags.allergens + tags.dietaryRestrictions + tags.intolerances + tags.features)
+        .distinct(),
 )
 
 /** Localizes a server cuisine code; unknown/new codes fall back to the raw code. */

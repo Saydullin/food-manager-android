@@ -50,6 +50,10 @@ data class FoodDto(
     val tags: FoodTagsDto = FoodTagsDto(),
     val createdAt: String,
     val updatedAt: String,
+    /** The language the name/description actually resolved to (server falls back to `en`, then any translation). */
+    val language: String = "en",
+    /** Every language this dish is translated into. */
+    val availableLanguages: List<String> = emptyList(),
 )
 
 /** GET /foods/feed — keyset (cursor) paginated. */

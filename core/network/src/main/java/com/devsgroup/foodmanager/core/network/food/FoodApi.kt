@@ -24,10 +24,14 @@ interface FoodApi {
     suspend fun getFeed(
         @Query("limit") limit: Int,
         @Query("cursor") cursor: String? = null,
+        @Query("lang") lang: String? = null,
     ): FeedResponseDto
 
     @GET("foods/{foodId}")
-    suspend fun getFood(@Path("foodId") foodId: String): FoodDetailResponseDto
+    suspend fun getFood(
+        @Path("foodId") foodId: String,
+        @Query("lang") lang: String? = null,
+    ): FoodDetailResponseDto
 
     @POST("foods/{foodId}/interactions")
     suspend fun recordInteraction(

@@ -16,8 +16,10 @@ interface FoodRepository {
     /**
      * Fetches the next page of the feed (using the cursor from the last page) and
      * merges it into the cache backing [feed]. Returns whether more pages remain.
+     * [lang] is an optional BCP-47 tag; the server falls back to `en`, then to any
+     * available translation, never omitting a dish for a missing translation.
      */
-    suspend fun loadNextFeedPage(): Boolean
+    suspend fun loadNextFeedPage(lang: String? = null): Boolean
 
     /** Foods the user has liked / saved. */
     fun likedFoods(): Flow<List<Food>>

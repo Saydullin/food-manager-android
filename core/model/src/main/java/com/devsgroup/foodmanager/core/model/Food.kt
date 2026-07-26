@@ -13,6 +13,10 @@ data class Food(
     val tags: FoodTags,
     val createdAt: String,
     val updatedAt: String,
+    /** BCP-47 tag the name/description actually resolved to (server-side translation fallback). */
+    val language: String = "en",
+    /** Every language this dish is translated into. */
+    val availableLanguages: List<String> = emptyList(),
 )
 
 /** Per-serving nutrition (КБЖУ); any field may be unknown. */

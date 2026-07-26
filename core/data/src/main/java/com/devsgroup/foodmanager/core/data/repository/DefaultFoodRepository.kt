@@ -47,9 +47,9 @@ class DefaultFoodRepository @Inject constructor(
     override fun feed(): Flow<List<Food>> =
         foodDao.observeFeed().map { entities -> entities.map { it.toDomain() } }
 
-    override suspend fun loadNextFeedPage(): Boolean = apiCall {
+    override suspend fun loadNextFeedPage(lang: String?): Boolean = apiCall {
         val cursor = feedMetaDao.get()?.nextCursor
-        val response = foodApi.getFeed(limit = FEED_PAGE_SIZE, cursor = cursor)
+        val response = foodApi.getFeed(limit = FEED_PAGE_SIZE, cursor = cursor, lang = lang)
         var nextPosition = (foodDao.maxFeedPosition() ?: -1) + 1
         val entities = response.items.map { dto -> dto.toDomain().toEntity(feedPosition = nextPosition++) }
         foodDao.upsertAll(entities)
