@@ -68,7 +68,7 @@ internal fun GroupsSection(
                 keySelector = { it.id },
                 layout = { content ->
                     Column(
-                        modifier = Modifier.padding(top = 13.dp).animateContentSize(),
+                        modifier = Modifier.padding(top = 13.dp).animateContentSize(itemSpring()),
                         verticalArrangement = Arrangement.spacedBy(9.dp),
                         content = { content() },
                     )

@@ -65,7 +65,7 @@ internal fun TasteProfileSection(
             keySelector = { it },
             layout = { content ->
                 FlowRow(
-                    modifier = Modifier.padding(top = 8.dp).animateContentSize(),
+                    modifier = Modifier.padding(top = 8.dp).animateContentSize(itemSpring()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     content = { content() },
@@ -88,7 +88,7 @@ internal fun TasteProfileSection(
             keySelector = { it },
             layout = { content ->
                 FlowRow(
-                    modifier = Modifier.padding(top = 8.dp).animateContentSize(),
+                    modifier = Modifier.padding(top = 8.dp).animateContentSize(itemSpring()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     content = { content() },
@@ -120,7 +120,7 @@ internal fun TasteProfileSection(
             keySelector = { it },
             layout = { content ->
                 FlowRow(
-                    modifier = Modifier.padding(top = 8.dp).animateContentSize(),
+                    modifier = Modifier.padding(top = 8.dp).animateContentSize(itemSpring()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     content = { content() },

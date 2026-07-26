@@ -2,6 +2,8 @@ package com.devsgroup.foodmanager.feature.profile.presentation
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -15,6 +17,12 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+
+/** Shared spring so item fade/scale and the container's [animateContentSize] reflow in sync. */
+internal fun <T> itemSpring() = spring<T>(
+    dampingRatio = Spring.DampingRatioNoBouncy,
+    stiffness = Spring.StiffnessMediumLow,
+)
 
 private class AnimatedEntry<T>(item: T) {
     var item by mutableStateOf(item)
@@ -64,8 +72,8 @@ internal fun <T> AnimatedItemList(
             key(itemKey) {
                 AnimatedVisibility(
                     visibleState = entry.visibleState,
-                    enter = fadeIn() + scaleIn(initialScale = 0.85f),
-                    exit = fadeOut() + scaleOut(targetScale = 0.85f),
+                    enter = fadeIn(itemSpring()) + scaleIn(initialScale = 0.8f, animationSpec = itemSpring()),
+                    exit = fadeOut(itemSpring()) + scaleOut(targetScale = 0.8f, animationSpec = itemSpring()),
                 ) {
                     itemContent(entry.item)
                 }

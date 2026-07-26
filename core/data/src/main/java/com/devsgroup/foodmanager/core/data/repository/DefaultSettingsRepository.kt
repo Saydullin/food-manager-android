@@ -1,42 +1,39 @@
 package com.devsgroup.foodmanager.core.data.repository
 
+import com.devsgroup.foodmanager.core.datastore.SettingsPreferencesDataSource
 import com.devsgroup.foodmanager.core.domain.repository.SettingsRepository
 import com.devsgroup.foodmanager.core.model.AppLanguage
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * In-memory implementation: holds app preferences for the process lifetime. Back this
- * with Preferences DataStore (:core:datastore) to persist them across sessions.
+ * Persists app preferences via [SettingsPreferencesDataSource] so notifications/theme/
+ * language choices survive across app launches, not just the process lifetime.
  */
 @Singleton
-class DefaultSettingsRepository @Inject constructor() : SettingsRepository {
+class DefaultSettingsRepository @Inject constructor(
+    private val settingsPrefs: SettingsPreferencesDataSource,
+) : SettingsRepository {
 
-    private val notificationsEnabled = MutableStateFlow(true)
-
-    // The app's identity is the dark, bold look, so dark theme starts on.
-    private val darkThemeEnabled = MutableStateFlow(true)
-
-    private val language = MutableStateFlow(AppLanguage.RUSSIAN)
-
-    override fun notificationsEnabled(): Flow<Boolean> = notificationsEnabled.asStateFlow()
+    override fun notificationsEnabled(): Flow<Boolean> = settingsPrefs.notificationsEnabled
 
     override suspend fun setNotificationsEnabled(enabled: Boolean) {
-        notificationsEnabled.value = enabled
+        settingsPrefs.setNotificationsEnabled(enabled)
     }
 
-    override fun darkThemeEnabled(): Flow<Boolean> = darkThemeEnabled.asStateFlow()
+    override fun darkThemeEnabled(): Flow<Boolean> = settingsPrefs.darkThemeEnabled
 
     override suspend fun setDarkThemeEnabled(enabled: Boolean) {
-        darkThemeEnabled.value = enabled
+        settingsPrefs.setDarkThemeEnabled(enabled)
     }
 
-    override fun language(): Flow<AppLanguage> = language.asStateFlow()
+    override fun language(): Flow<AppLanguage> = settingsPrefs.language.map { name ->
+        name?.let { runCatching { AppLanguage.valueOf(it) }.getOrNull() } ?: AppLanguage.RUSSIAN
+    }
 
     override suspend fun setLanguage(language: AppLanguage) {
-        this.language.value = language
+        settingsPrefs.setLanguage(language.name)
     }
 }

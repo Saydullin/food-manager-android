@@ -28,7 +28,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 /** Which bottom sheet (if any) is open. Mutually exclusive, matching the design. */
@@ -191,7 +190,6 @@ class ProfileViewModel @Inject constructor(
         if (tag.isNullOrBlank()) return
         openSheet(null)
         viewModelScope.launch {
-            delay(TAG_ENTRANCE_DELAY.inWholeMilliseconds)
             val current = tasteProfileRepository.tasteProfile().first()
             tasteProfileRepository.updateTasteProfile(current.copy(favoriteTags = current.favoriteTags + tag))
         }
@@ -202,7 +200,6 @@ class ProfileViewModel @Inject constructor(
         if (tag.isNullOrBlank()) return
         openSheet(null)
         viewModelScope.launch {
-            delay(TAG_ENTRANCE_DELAY.inWholeMilliseconds)
             val current = tasteProfileRepository.tasteProfile().first()
             tasteProfileRepository.updateTasteProfile(current.copy(avoidTags = current.avoidTags + tag))
         }
@@ -237,7 +234,6 @@ class ProfileViewModel @Inject constructor(
         if (name.isNullOrBlank()) return
         openSheet(null)
         viewModelScope.launch {
-            delay(TAG_ENTRANCE_DELAY.inWholeMilliseconds)
             groupRepository.createGroup(name)
             showToast("Группа «$name» создана")
         }
@@ -306,8 +302,5 @@ class ProfileViewModel @Inject constructor(
 
     private companion object {
         val TOAST_DURATION = 2.seconds
-
-        /** Sheet-close animation (~300ms) plus the requested 100ms pause before the new item animates in. */
-        val TAG_ENTRANCE_DELAY = 400.milliseconds
     }
 }
