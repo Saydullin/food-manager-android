@@ -8,6 +8,7 @@ import com.devsgroup.foodmanager.core.network.interceptor.AccountBanInterceptor
 import com.devsgroup.foodmanager.core.network.interceptor.AuthInterceptor
 import com.devsgroup.foodmanager.core.network.interceptor.TokenRefreshAuthenticator
 import com.devsgroup.foodmanager.core.network.profile.ProfileApi
+import com.devsgroup.foodmanager.core.network.settings.SettingsApi
 import com.devsgroup.foodmanager.core.network.upload.UploadApi
 import dagger.Module
 import dagger.Provides
@@ -109,6 +110,10 @@ object NetworkModule {
     @Provides
     @Singleton
     fun providesFoodApi(retrofit: Retrofit): FoodApi = retrofit.create(FoodApi::class.java)
+
+    @Provides
+    @Singleton
+    fun providesSettingsApi(retrofit: Retrofit): SettingsApi = retrofit.create(SettingsApi::class.java)
 
     @Provides
     @Singleton

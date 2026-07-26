@@ -37,4 +37,13 @@ interface ProfileRepository {
      * there, so a picked photo must go through this endpoint first).
      */
     suspend fun uploadAvatarImage(bytes: ByteArray, fileName: String, mimeType: String): String
+
+    /** Full-replaces the user's food preferences (free-form strings); the server sorts/dedupes them. */
+    suspend fun updateFoodPreferences(preferences: List<String>)
+
+    /** Full-replaces the user's food exceptions (free-form strings); the server sorts/dedupes them. */
+    suspend fun updateFoodExceptions(exceptions: List<String>)
+
+    /** Full-replaces the user's selected diets (server-owned enum codes, e.g. "VEGETARIAN"). */
+    suspend fun updateDiets(diets: List<String>)
 }

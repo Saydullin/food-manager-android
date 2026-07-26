@@ -8,7 +8,6 @@ import com.devsgroup.foodmanager.core.domain.repository.GroupRepository
 import com.devsgroup.foodmanager.core.domain.repository.ProfileRepository
 import com.devsgroup.foodmanager.core.domain.repository.RecipeRepository
 import com.devsgroup.foodmanager.core.domain.repository.SettingsRepository
-import com.devsgroup.foodmanager.core.domain.repository.TasteProfileRepository
 import com.devsgroup.foodmanager.core.model.AppLanguage
 import com.devsgroup.foodmanager.core.model.DietaryTag
 import com.devsgroup.foodmanager.core.model.Food
@@ -84,7 +83,6 @@ private data class SettingsState(
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
-    private val tasteProfileRepository: TasteProfileRepository,
     private val groupRepository: GroupRepository,
     private val recipeRepository: RecipeRepository,
     private val foodRepository: FoodRepository,
@@ -106,16 +104,15 @@ class ProfileViewModel @Inject constructor(
                 }
                 emit(UserProfile(name = "", username = ""))
             },
-        tasteProfileRepository.tasteProfile(),
         groupRepository.groups(),
         recipeRepository.myRecipes(),
         foodRepository.likedFoods(),
-    ) { profile, tasteProfile, groups, recipes, likedFoods ->
+    ) { profile, groups, recipes, likedFoods ->
         RepositoryState(
             profile = profile,
-            favoriteTags = tasteProfile.favoriteTags,
-            avoidTags = tasteProfile.avoidTags,
-            dietTags = tasteProfile.dietaryTags,
+            favoriteTags = profile.foodPreferences.toSet(),
+            avoidTags = profile.foodExceptions.toSet(),
+            dietTags = profile.diets.mapNotNull { runCatching { DietaryTag.valueOf(it) }.getOrNull() }.toSet(),
             groups = groups,
             myRecipes = recipes,
             likedFoods = likedFoods,
@@ -216,8 +213,8 @@ class ProfileViewModel @Inject constructor(
         if (tag.isNullOrBlank()) return
         openSheet(null)
         viewModelScope.launch {
-            val current = tasteProfileRepository.tasteProfile().first()
-            tasteProfileRepository.updateTasteProfile(current.copy(favoriteTags = current.favoriteTags + tag))
+            val current = profileRepository.profile().first().foodPreferences
+            profileRepository.updateFoodPreferences(current + tag)
         }
     }
 
@@ -226,30 +223,30 @@ class ProfileViewModel @Inject constructor(
         if (tag.isNullOrBlank()) return
         openSheet(null)
         viewModelScope.launch {
-            val current = tasteProfileRepository.tasteProfile().first()
-            tasteProfileRepository.updateTasteProfile(current.copy(avoidTags = current.avoidTags + tag))
+            val current = profileRepository.profile().first().foodExceptions
+            profileRepository.updateFoodExceptions(current + tag)
         }
     }
 
     fun onRemoveFavoriteTag(tag: String) {
         viewModelScope.launch {
-            val current = tasteProfileRepository.tasteProfile().first()
-            tasteProfileRepository.updateTasteProfile(current.copy(favoriteTags = current.favoriteTags - tag))
+            val current = profileRepository.profile().first().foodPreferences
+            profileRepository.updateFoodPreferences(current - tag)
         }
     }
 
     fun onRemoveAvoidTag(tag: String) {
         viewModelScope.launch {
-            val current = tasteProfileRepository.tasteProfile().first()
-            tasteProfileRepository.updateTasteProfile(current.copy(avoidTags = current.avoidTags - tag))
+            val current = profileRepository.profile().first().foodExceptions
+            profileRepository.updateFoodExceptions(current - tag)
         }
     }
 
     fun onToggleDietTag(tag: DietaryTag) {
         viewModelScope.launch {
-            val current = tasteProfileRepository.tasteProfile().first()
-            val dietTags = if (tag in current.dietaryTags) current.dietaryTags - tag else current.dietaryTags + tag
-            tasteProfileRepository.updateTasteProfile(current.copy(dietaryTags = dietTags))
+            val current = profileRepository.profile().first().diets
+            val updated = if (tag.name in current) current - tag.name else current + tag.name
+            profileRepository.updateDiets(updated)
         }
     }
 

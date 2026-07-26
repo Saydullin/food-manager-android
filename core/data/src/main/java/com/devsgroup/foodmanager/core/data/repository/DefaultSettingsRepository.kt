@@ -1,39 +1,96 @@
 package com.devsgroup.foodmanager.core.data.repository
 
+import com.devsgroup.foodmanager.core.common.di.Dispatcher
+import com.devsgroup.foodmanager.core.common.di.FoodDispatcher
+import com.devsgroup.foodmanager.core.data.mapper.isDarkTheme
+import com.devsgroup.foodmanager.core.data.mapper.toAppLanguage
+import com.devsgroup.foodmanager.core.data.mapper.toThemeValue
 import com.devsgroup.foodmanager.core.datastore.SettingsPreferencesDataSource
 import com.devsgroup.foodmanager.core.domain.repository.SettingsRepository
 import com.devsgroup.foodmanager.core.model.AppLanguage
+import com.devsgroup.foodmanager.core.network.settings.SettingsApi
+import com.devsgroup.foodmanager.core.network.settings.model.SettingsDto
+import com.devsgroup.foodmanager.core.network.settings.model.UpdateSettingsRequest
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.withContext
+import retrofit2.HttpException
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Persists app preferences via [SettingsPreferencesDataSource] so notifications/theme/
- * language choices survive across app launches, not just the process lifetime.
+ * Backs the signed-in user's settings with the real `/users/me/settings` endpoints
+ * ([SettingsApi]), syncing the server's copy on first read and after every update.
+ * [SettingsPreferencesDataSource] still holds the last-known values so the app has
+ * something to show immediately and while offline; if the initial fetch fails, the
+ * local values (or their defaults) are used instead of leaving the caller stuck.
  */
 @Singleton
 class DefaultSettingsRepository @Inject constructor(
+    private val settingsApi: SettingsApi,
     private val settingsPrefs: SettingsPreferencesDataSource,
+    @Dispatcher(FoodDispatcher.IO) private val ioDispatcher: CoroutineDispatcher,
 ) : SettingsRepository {
 
-    override fun notificationsEnabled(): Flow<Boolean> = settingsPrefs.notificationsEnabled
+    private val cache = MutableStateFlow<SettingsDto?>(null)
+
+    private val settingsFlow: Flow<SettingsDto> = cache
+        .onStart { if (cache.value == null) cache.value = fetchSettings() }
+        .filterNotNull()
+
+    override fun notificationsEnabled(): Flow<Boolean> = settingsFlow.map { it.pushNotificationsEnabled }
 
     override suspend fun setNotificationsEnabled(enabled: Boolean) {
-        settingsPrefs.setNotificationsEnabled(enabled)
+        updateSettings(UpdateSettingsRequest(pushNotificationsEnabled = enabled))
     }
 
-    override fun darkThemeEnabled(): Flow<Boolean> = settingsPrefs.darkThemeEnabled
+    override fun darkThemeEnabled(): Flow<Boolean> = settingsFlow.map { it.isDarkTheme() }
 
     override suspend fun setDarkThemeEnabled(enabled: Boolean) {
-        settingsPrefs.setDarkThemeEnabled(enabled)
+        updateSettings(UpdateSettingsRequest(theme = enabled.toThemeValue()))
     }
 
-    override fun language(): Flow<AppLanguage> = settingsPrefs.language.map { name ->
-        name?.let { runCatching { AppLanguage.valueOf(it) }.getOrNull() } ?: AppLanguage.systemDefault()
-    }
+    override fun language(): Flow<AppLanguage> = settingsFlow.map { it.toAppLanguage() }
 
     override suspend fun setLanguage(language: AppLanguage) {
-        settingsPrefs.setLanguage(language.name)
+        updateSettings(UpdateSettingsRequest(language = language.tag))
     }
+
+    private suspend fun fetchSettings(): SettingsDto = try {
+        apiCall { settingsApi.mySettings().settings }.also { persistLocally(it) }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: IOException) {
+        localSnapshot()
+    } catch (e: HttpException) {
+        localSnapshot()
+    }
+
+    private suspend fun updateSettings(request: UpdateSettingsRequest) {
+        val updated = apiCall { settingsApi.updateSettings(request).settings }
+        cache.value = updated
+        persistLocally(updated)
+    }
+
+    /** What the app showed before this session ever talked to the server, for offline use. */
+    private suspend fun localSnapshot(): SettingsDto = SettingsDto(
+        language = settingsPrefs.language.first() ?: AppLanguage.systemDefault().tag,
+        theme = settingsPrefs.darkThemeEnabled.first().toThemeValue(),
+        pushNotificationsEnabled = settingsPrefs.notificationsEnabled.first(),
+    )
+
+    private suspend fun persistLocally(settings: SettingsDto) {
+        settingsPrefs.setLanguage(settings.language)
+        settingsPrefs.setDarkThemeEnabled(settings.isDarkTheme())
+        settingsPrefs.setNotificationsEnabled(settings.pushNotificationsEnabled)
+    }
+
+    private suspend fun <T> apiCall(block: suspend () -> T): T = withContext(ioDispatcher) { block() }
 }

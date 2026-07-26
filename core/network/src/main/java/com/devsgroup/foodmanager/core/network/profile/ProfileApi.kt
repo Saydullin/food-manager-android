@@ -2,6 +2,9 @@ package com.devsgroup.foodmanager.core.network.profile
 
 import com.devsgroup.foodmanager.core.network.profile.model.EditProfileRequest
 import com.devsgroup.foodmanager.core.network.profile.model.ProfileResponse
+import com.devsgroup.foodmanager.core.network.profile.model.SetDietsRequest
+import com.devsgroup.foodmanager.core.network.profile.model.SetFoodExceptionsRequest
+import com.devsgroup.foodmanager.core.network.profile.model.SetFoodPreferencesRequest
 import com.devsgroup.foodmanager.core.network.profile.model.SetProfileImageRequest
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -28,4 +31,13 @@ interface ProfileApi {
 
     @DELETE("users/me/image")
     suspend fun removeProfileImage(): ProfileResponse
+
+    @PUT("users/me/food-preferences")
+    suspend fun setFoodPreferences(@Body body: SetFoodPreferencesRequest): ProfileResponse
+
+    @PUT("users/me/food-exceptions")
+    suspend fun setFoodExceptions(@Body body: SetFoodExceptionsRequest): ProfileResponse
+
+    @PUT("users/me/diets")
+    suspend fun setDiets(@Body body: SetDietsRequest): ProfileResponse
 }

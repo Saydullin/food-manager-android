@@ -11,6 +11,9 @@ data class UserProfile(
     val age: Int? = null,
     val cookingAttitude: CookingAttitude? = null,
     val bio: String? = null,
+    val foodPreferences: List<String> = emptyList(),
+    val foodExceptions: List<String> = emptyList(),
+    val diets: List<String> = emptyList(),
 )
 
 /** How the user relates to cooking — shown as the optional meta line under their name. */

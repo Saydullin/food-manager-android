@@ -118,6 +118,15 @@ class AuthPreferencesDataSource @Inject constructor(
         runBlocking { dataStore.edit { it[ACCOUNT_BANNED] = true } }
     }
 
+    /**
+     * Syncs the ban flag from the authoritative `isBanned` field on `GET /users/me`,
+     * so a lifted ban actually clears the tag instead of being stuck true forever
+     * (the interceptor-driven [onAccountBanned] above only ever sets it, never unsets it).
+     */
+    suspend fun updateAccountBanned(banned: Boolean) {
+        dataStore.edit { it[ACCOUNT_BANNED] = banned }
+    }
+
     private companion object {
         val ACCESS_TOKEN = stringPreferencesKey("auth_access_token")
         val REFRESH_TOKEN = stringPreferencesKey("auth_refresh_token")

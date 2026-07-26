@@ -11,6 +11,9 @@ import com.devsgroup.foodmanager.core.model.UserProfile
 import com.devsgroup.foodmanager.core.network.auth.model.ErrorResponse
 import com.devsgroup.foodmanager.core.network.profile.ProfileApi
 import com.devsgroup.foodmanager.core.network.profile.model.EditProfileRequest
+import com.devsgroup.foodmanager.core.network.profile.model.SetDietsRequest
+import com.devsgroup.foodmanager.core.network.profile.model.SetFoodExceptionsRequest
+import com.devsgroup.foodmanager.core.network.profile.model.SetFoodPreferencesRequest
 import com.devsgroup.foodmanager.core.network.profile.model.SetProfileImageRequest
 import com.devsgroup.foodmanager.core.network.toReachableMediaUrl
 import com.devsgroup.foodmanager.core.network.upload.UploadApi
@@ -124,9 +127,44 @@ class DefaultProfileRepository @Inject constructor(
             uploadApi.uploadImage(part).imageUrl.toReachableMediaUrl()
         }
 
+    override suspend fun updateFoodPreferences(preferences: List<String>) {
+        val updated = apiCall {
+            profileApi.setFoodPreferences(SetFoodPreferencesRequest(preferences)).user.toDomain()
+        }
+        cacheAndPersist(updated)
+    }
+
+    override suspend fun updateFoodExceptions(exceptions: List<String>) {
+        val updated = apiCall {
+            profileApi.setFoodExceptions(SetFoodExceptionsRequest(exceptions)).user.toDomain()
+        }
+        cacheAndPersist(updated)
+    }
+
+    override suspend fun updateDiets(diets: List<String>) {
+        val updated = apiCall {
+            profileApi.setDiets(SetDietsRequest(diets)).user.toDomain()
+        }
+        cacheAndPersist(updated)
+    }
+
+    /** Merges a fresh server response over the cached account-identity fields it doesn't carry, then persists. */
+    private suspend fun cacheAndPersist(updated: UserProfile) {
+        val previous = cache.value
+        val merged = updated.copy(
+            email = previous?.email,
+            emailVerified = previous?.emailVerified ?: false,
+            cookingAttitude = previous?.cookingAttitude,
+        )
+        cache.value = merged
+        profilePrefs.saveProfile(merged)
+    }
+
     private suspend fun fetchProfile(): UserProfile = apiCall {
         val local = cache.value ?: profilePrefs.currentProfile()
-        profileApi.myProfile().user.toDomain().copy(
+        val user = profileApi.myProfile().user
+        authPrefs.updateAccountBanned(user.isBanned)
+        user.toDomain().copy(
             email = local?.email,
             emailVerified = local?.emailVerified ?: false,
             cookingAttitude = cache.value?.cookingAttitude,

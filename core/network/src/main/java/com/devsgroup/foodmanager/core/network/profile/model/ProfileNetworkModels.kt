@@ -29,6 +29,18 @@ data class EditProfileRequest(
 @Serializable
 data class SetProfileImageRequest(val imageUrl: String)
 
+/** Body for `PUT /users/me/food-preferences` — full-replace list of free-form strings. */
+@Serializable
+data class SetFoodPreferencesRequest(val preferences: List<String>)
+
+/** Body for `PUT /users/me/food-exceptions` — full-replace list of free-form strings. */
+@Serializable
+data class SetFoodExceptionsRequest(val exceptions: List<String>)
+
+/** Body for `PUT /users/me/diets` — full-replace list of server-owned diet enum codes. */
+@Serializable
+data class SetDietsRequest(val diets: List<String>)
+
 // ---- Responses --------------------------------------------------------------
 
 @Serializable
@@ -40,6 +52,10 @@ data class ProfileUserDto(
     val age: Int? = null,
     val status: String? = null,
     val description: String? = null,
+    val isBanned: Boolean = false,
+    val foodPreferences: List<String> = emptyList(),
+    val foodExceptions: List<String> = emptyList(),
+    val diets: List<String> = emptyList(),
 )
 
 /** Envelope shared by GET/PATCH `/users/me` and the image set/remove endpoints. */
