@@ -56,7 +56,7 @@ internal fun AuthScaffold(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 32.dp),
     ) {
-        BrandMark()
+//        BrandMark()
 
         Spacer(Modifier.height(40.dp))
 
@@ -102,7 +102,11 @@ internal fun AuthFooter(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        FoodTextButton(text = action, onClick = onActionClick)
+        FoodTextButton(
+            text = action,
+            onClick = onActionClick,
+            compact = true
+        )
     }
 }
 

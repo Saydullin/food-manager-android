@@ -4,7 +4,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 /** The host/port the app talks to the backend on — see `NetworkModule.providesRetrofit`. */
 object NetworkConfig {
-    const val BASE_URL = "http://192.168.80.132:3000/api/"
+    const val BASE_URL = "http://5.188.20.138:3000/api/"
 }
 
 private val LOOPBACK_HOSTS = setOf("localhost", "127.0.0.1", "10.0.2.2")

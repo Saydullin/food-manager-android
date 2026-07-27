@@ -77,7 +77,7 @@ private fun LoginContent(
             uiState.codeSent -> "Введите код, который мы отправили на почту."
             uiState.needsEmailLogin ->
                 "На этом устройстве ещё нет ключа входа. Введите почту, привязанную к аккаунту, — пришлём код для входа."
-            else -> "Введите никнейм — подтвердим вход ключом этого устройства."
+            else -> "Введите никнейм - подтвердим вход ключом этого устройства."
         },
         titleStyle = MaterialTheme.typography.headlineLarge,
         modifier = modifier,

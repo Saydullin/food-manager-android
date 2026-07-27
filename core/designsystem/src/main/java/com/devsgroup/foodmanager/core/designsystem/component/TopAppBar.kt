@@ -19,7 +19,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.devsgroup.foodmanager.core.designsystem.theme.FoodManagerTheme
 
 /**
- * The brand screen header: a bold, left-aligned title (Unbounded) with optional
+ * The brand screen header: a bold, left-aligned title (Nunito) with optional
  * leading navigation and trailing [actions] — e.g. the cart badge from the mock.
  *
  * Every screen wears the same header, so it is styled once here as a design-system

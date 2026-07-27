@@ -61,7 +61,7 @@ private fun RegistrationContent(
 ) {
     AuthScaffold(
         title = "Создать\nаккаунт",
-        subtitle = "Никнейм — как вас увидят в семейной группе. Почту нужно подтвердить кодом из письма.",
+        subtitle = "Никнейм - как вас увидят в семейной группе. Почту нужно подтвердить кодом из письма.",
         modifier = modifier,
     ) {
         FoodTextField(

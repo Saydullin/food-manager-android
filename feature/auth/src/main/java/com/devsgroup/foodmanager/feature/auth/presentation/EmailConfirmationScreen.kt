@@ -114,6 +114,7 @@ private fun EmailConfirmationContent(
 
         FoodTextButton(
             text = "Отправить код ещё раз",
+            compact = true,
             onClick = onResendCode,
             enabled = !uiState.isResending,
             modifier = Modifier.align(Alignment.CenterHorizontally),
@@ -124,6 +125,7 @@ private fun EmailConfirmationContent(
         FoodTextButton(
             text = if (uiState.isChangingEmail) "Отменить" else "Изменить почту?",
             onClick = onToggleChangeEmail,
+            compact = true,
             modifier = Modifier.align(Alignment.CenterHorizontally),
         )
 
@@ -158,6 +160,7 @@ private fun EmailConfirmationContent(
         FoodTextButton(
             text = "Не вы? Выйти",
             onClick = onLogout,
+            compact = true,
             modifier = Modifier.align(Alignment.CenterHorizontally),
         )
     }

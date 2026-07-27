@@ -193,6 +193,8 @@ private fun Food.toUiModel(): RecommendationUiModel = RecommendationUiModel(
     nutritionBadges = listOfNotNull(
         nutrition?.servings?.let { "$it порц." },
         nutrition?.calories?.let { "$it ккал" },
+        nutrition?.protein?.let { "$it г белк." },
+        nutrition?.fat?.let { "$it г жир." },
         nutrition?.carbs?.let { "$it г угл." },
     ),
     dietBadges = tags.diets.map(::dietLabel),

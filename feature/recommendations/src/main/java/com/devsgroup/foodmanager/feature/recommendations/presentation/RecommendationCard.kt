@@ -4,7 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -66,6 +67,7 @@ private val TextBackdropBlur = 24.dp
  * 29–30 it is a no-op, and layer 2 alone still keeps the text readable, so the effect
  * degrades gracefully rather than breaking.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun RecommendationCard(
     card: RecommendationUiModel,
@@ -134,26 +136,29 @@ internal fun RecommendationCard(
                 ),
         )
 
-        // Top-left badges: nutrition (servings/calories/carbs) on top, then diets and
-        // allergens each on their own row below.
+        // Top-left badges: nutrition (servings/calories/protein/fat/carbs) on top, then
+        // diets and allergens each on their own wrapping row below. FlowRow (rather than
+        // Row) lets a 4th/5th badge wrap onto a new line instead of squeezing every
+        // badge in the row to fit, which was shrinking the last one unreadably.
         Column(
             modifier = Modifier
                 .align(Alignment.TopStart)
+                .fillMaxWidth(0.85f)
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             if (card.nutritionBadges.isNotEmpty()) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     card.nutritionBadges.forEach { badge -> OverlayBadge(text = badge) }
                 }
             }
             if (card.dietBadges.isNotEmpty()) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     card.dietBadges.forEach { badge -> OverlayBadge(text = badge) }
                 }
             }
             if (card.allergyBadges.isNotEmpty()) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     card.allergyBadges.forEach { badge -> OverlayBadge(text = badge) }
                 }
             }
@@ -229,7 +234,7 @@ private fun RecommendationCardPreview() {
                     imageUrl = "",
                     title = "Том Ям с креветками",
                     description = "Острый тайский суп на кокосовом молоке с креветками и грибами.",
-                    nutritionBadges = listOf("2 порц.", "480 ккал", "40 г угл."),
+                    nutritionBadges = listOf("2 порц.", "480 ккал", "18 г белк.", "22 г жир.", "40 г угл."),
                     dietBadges = listOf("Остро"),
                     categories = listOf("Острое", "Тайская"),
                 ),

@@ -69,7 +69,7 @@ New/changed API endpoints are implemented against the Postman collection at `E:\
 
 ### Design system
 
-Bold/dark theme, Unbounded display font (downloadable-font delivery via `core/designsystem/src/main/res/font/`), Material 3 Expressive (alpha — `material3` version is pinned in `gradle/libs.versions.toml` above what the Compose BOM resolves), `dynamicColor` off, accent colors map to their own container colors per design-system token conventions.
+Bold/dark theme, Nunito display font (bundled as a single variable-weight TTF in `core/designsystem/src/main/res/font/`, instanced per weight via `FontVariation.Settings` in `Type.kt` — no runtime/Google Play Services download), Material 3 Expressive (alpha — `material3` version is pinned in `gradle/libs.versions.toml` above what the Compose BOM resolves), `dynamicColor` off, accent colors map to their own container colors per design-system token conventions.
 
 ## Build & tooling notes
 
