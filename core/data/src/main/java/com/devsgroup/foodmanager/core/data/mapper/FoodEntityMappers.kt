@@ -19,6 +19,7 @@ fun FoodEntity.toDomain() = Food(
     id = id,
     name = name,
     description = description,
+    content = content,
     cuisine = cuisine,
     images = imagesCsv.fromCsv(),
     nutrition = if (calories == null && servings == null && protein == null && fat == null && carbs == null) {
@@ -42,6 +43,7 @@ fun Food.toEntity(feedPosition: Int?) = FoodEntity(
     id = id,
     name = name,
     description = description,
+    content = content,
     cuisine = cuisine,
     imagesCsv = images.toCsv(),
     calories = nutrition?.calories,

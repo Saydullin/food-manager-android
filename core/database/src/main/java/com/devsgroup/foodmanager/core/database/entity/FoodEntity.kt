@@ -17,6 +17,8 @@ data class FoodEntity(
     @PrimaryKey val id: String,
     val name: String,
     val description: String?,
+    /** The full recipe article/instructions, as HTML; separate from the short [description]. */
+    val content: String?,
     val cuisine: String?,
     val imagesCsv: String,
     val calories: Int?,

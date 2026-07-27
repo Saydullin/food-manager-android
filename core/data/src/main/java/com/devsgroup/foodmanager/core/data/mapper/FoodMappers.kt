@@ -13,6 +13,7 @@ fun FoodDto.toDomain() = Food(
     id = id,
     name = name,
     description = description,
+    content = content,
     cuisine = cuisine,
     images = images,
     nutrition = nutrition?.toDomain(),

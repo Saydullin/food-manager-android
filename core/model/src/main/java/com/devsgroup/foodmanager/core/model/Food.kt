@@ -5,6 +5,8 @@ data class Food(
     val id: String,
     val name: String,
     val description: String?,
+    /** The full recipe article/instructions, as HTML; separate from the short [description]. */
+    val content: String?,
     /** A code from the server's `GET /cuisines` catalog (e.g. `"ITALIAN"`); open-ended, nullable. */
     val cuisine: String?,
     /** 1..7 photo URLs, ordered (first = cover); empty if none. */

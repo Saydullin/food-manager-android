@@ -112,6 +112,7 @@ private fun LikedDishesSectionPreview() {
                         id = "1",
                         name = "Том Ям",
                         description = "",
+                        content = null,
                         cuisine = "THAI",
                         images = emptyList(),
                         nutrition = null,

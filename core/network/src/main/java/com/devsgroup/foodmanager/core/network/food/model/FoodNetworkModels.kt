@@ -44,6 +44,8 @@ data class FoodDto(
     val id: String,
     val name: String,
     val description: String? = null,
+    /** The full recipe article/instructions, as HTML; separate from the short [description]. */
+    val content: String? = null,
     val cuisine: String? = null,
     val images: List<String> = emptyList(),
     val nutrition: NutritionDto? = null,
