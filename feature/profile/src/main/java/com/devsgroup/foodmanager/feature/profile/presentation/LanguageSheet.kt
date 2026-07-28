@@ -23,7 +23,7 @@ internal fun LanguageSheet(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    FoodModalBottomSheet(onDismissRequest = onDismiss, modifier = modifier) {
+    FoodModalBottomSheet(onDismissRequest = onDismiss, modifier = modifier) { dismiss ->
         Text(text = "Язык", style = MaterialTheme.typography.headlineSmall)
         Column(
             modifier = Modifier.padding(top = 16.dp),
@@ -33,7 +33,7 @@ internal fun LanguageSheet(
                 LanguageRow(
                     language = language,
                     isSelected = language == selected,
-                    onClick = { onSelect(language) },
+                    onClick = { onSelect(language); dismiss() },
                 )
             }
         }

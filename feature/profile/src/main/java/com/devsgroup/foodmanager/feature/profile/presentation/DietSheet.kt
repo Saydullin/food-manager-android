@@ -24,7 +24,7 @@ internal fun DietSheet(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    FoodModalBottomSheet(onDismissRequest = onDismiss, modifier = modifier) {
+    FoodModalBottomSheet(onDismissRequest = onDismiss, modifier = modifier) { dismiss ->
         Text(text = "Диета и аллергии", style = MaterialTheme.typography.headlineSmall)
         Text(
             text = "Учтём при подборе блюд",
@@ -46,6 +46,6 @@ internal fun DietSheet(
             }
         }
         Spacer(Modifier.height(20.dp))
-        FoodButton(text = "Готово", onClick = onDismiss, modifier = Modifier.fillMaxWidth())
+        FoodButton(text = "Готово", onClick = dismiss, modifier = Modifier.fillMaxWidth())
     }
 }

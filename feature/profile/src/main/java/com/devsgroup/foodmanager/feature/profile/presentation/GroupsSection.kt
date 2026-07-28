@@ -1,6 +1,5 @@
 package com.devsgroup.foodmanager.feature.profile.presentation
 
-import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -66,9 +65,9 @@ internal fun GroupsSection(
             AnimatedItemList(
                 items = groups,
                 keySelector = { it.id },
-                layout = { content ->
+                layout = { sizeAnimationModifier, content ->
                     Column(
-                        modifier = Modifier.padding(top = 13.dp).animateContentSize(itemSpring()),
+                        modifier = Modifier.padding(top = 13.dp).then(sizeAnimationModifier),
                         verticalArrangement = Arrangement.spacedBy(9.dp),
                         content = { content() },
                     )

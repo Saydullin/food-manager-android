@@ -1,12 +1,11 @@
 package com.devsgroup.foodmanager.ui
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -18,7 +17,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -50,22 +48,43 @@ fun FoodApp(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    when (val state = uiState) {
-        // Hold a neutral surface while the persisted session is read, so the start
-        // destination is decided exactly once. The theme preference isn't loaded yet
-        // either, so this brief window follows the system theme.
-        AppUiState.Loading -> FoodManagerTheme { LoadingScreen() }
-        is AppUiState.Ready -> FoodManagerTheme(darkTheme = state.darkThemeEnabled) {
-            FoodAppContent(
+    // Cross-fades from the splash into the real app once the session/settings resolve,
+    // instead of the two swapping in on the same frame. Keyed only on Loading-vs-Ready
+    // (not the whole uiState): keying on every field meant a fresh login flipping
+    // isLoggedIn true mid-session produced a *new* Ready target for Crossfade, which
+    // recomposed FoodAppContent into a brand new instance — a fresh rememberNavController()
+    // and a start destination recomputed from whatever emailVerified/isLoggedIn happened to
+    // read at that exact moment (often still stale, e.g. right after DefaultAuthRepository.verify()
+    // flips isLoggedIn before any profile refetch lands), discarding the in-flight
+    // onAuthenticated() navigation and dropping the user on EmailConfirmationScreen instead.
+    Crossfade(targetState = uiState is AppUiState.Loading, label = "AppState") { isLoading ->
+        if (isLoading) {
+            // Hold the splash while the persisted session is read, so the start
+            // destination is decided exactly once. The theme preference isn't loaded yet
+            // either, so this brief window follows the system theme.
+            FoodManagerTheme { SplashScreen() }
+        } else {
+            val state = uiState as AppUiState.Ready
+            // Computed once, the first time this branch composes — later isLoggedIn/
+            // emailVerified changes (a fresh login, a forced logout) must NOT recompute
+            // this, or FoodAppContent's NavController gets torn down mid-navigation (see
+            // above). Post-launch auth transitions are instead surfaced as explicit events
+            // (e.g. forcedLogoutEvents) that navigate through the existing NavController.
+            val startDestination = remember {
                 // Signed-out users land in the auth flow; signed-in-but-unverified users
                 // land on the email-confirmation gate; only a verified session skips both.
-                startDestination = when {
+                when {
                     !state.isLoggedIn -> RegistrationRoute
                     !state.emailVerified -> EmailConfirmationRoute
                     else -> RecommendationsRoute
-                },
-                forcedLogoutEvents = viewModel.forcedLogoutEvents,
-            )
+                }
+            }
+            FoodManagerTheme(darkTheme = state.darkThemeEnabled) {
+                FoodAppContent(
+                    startDestination = startDestination,
+                    forcedLogoutEvents = viewModel.forcedLogoutEvents,
+                )
+            }
         }
     }
 }
@@ -91,20 +110,35 @@ private fun FoodAppContent(startDestination: Any, forcedLogoutEvents: SharedFlow
     // The active bottom-nav destination, or null on child screens (details, group/edit
     // profile) and the full-bleed auth/onboarding screens. Its presence drives the default
     // header title AND whether the navigation bar shows.
+    //
+    // currentDestination is null for one composition (NavHost hasn't attached its graph to
+    // navController yet, since it's composed later, inside Scaffold's content slot) — falling
+    // back to matching startDestination itself means that first frame already reflects the
+    // real destination instead of a "nothing selected" guess, so the top/bottom bars never
+    // have to snap into place a frame later.
     val currentTopLevelDestination = TopLevelDestination.entries.firstOrNull { destination ->
-        currentDestination?.hasRoute(destination.route::class) == true
+        if (currentDestination != null) {
+            currentDestination.hasRoute(destination.route::class)
+        } else {
+            startDestination == destination.route
+        }
     }
 
     // Chromeless screens own their whole frame (no shared header, no bottom nav) — auth and
     // onboarding. Every other destination (top-level or a child push) shares the one header
     // below, so pushing/popping between them never toggles the bar's existence, only its
     // content — nothing about the shared layout size changes for those transitions.
-    val isChromelessRoute = currentDestination?.let { destination ->
-        destination.hasRoute(RegistrationRoute::class) ||
-            destination.hasRoute(LoginRoute::class) ||
-            destination.hasRoute(EmailConfirmationRoute::class) ||
-            destination.hasRoute(OnboardingRoute::class)
-    } == true
+    val isChromelessRoute = if (currentDestination != null) {
+        currentDestination.hasRoute(RegistrationRoute::class) ||
+            currentDestination.hasRoute(LoginRoute::class) ||
+            currentDestination.hasRoute(EmailConfirmationRoute::class) ||
+            currentDestination.hasRoute(OnboardingRoute::class)
+    } else {
+        startDestination == RegistrationRoute ||
+            startDestination == LoginRoute ||
+            startDestination == EmailConfirmationRoute ||
+            startDestination == OnboardingRoute
+    }
 
     // Child screens (edit profile, group detail) report their own title/back-icon here
     // instead of hosting a Scaffold of their own — see ReportFoodTopBar. Top-level screens
@@ -175,15 +209,5 @@ private fun FoodAppContent(startDestination: Any, forcedLogoutEvents: SharedFlow
                 modifier = Modifier.padding(innerPadding),
             )
         }
-    }
-}
-
-@Composable
-private fun LoadingScreen(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        CircularProgressIndicator()
     }
 }

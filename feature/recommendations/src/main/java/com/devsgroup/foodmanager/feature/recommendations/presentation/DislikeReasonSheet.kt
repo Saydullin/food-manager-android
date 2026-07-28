@@ -66,7 +66,7 @@ private fun tagLabel(code: String): String = when (code) {
     "VEGETARIAN" -> "вегетарианское"
     "VEGAN" -> "веганское"
     "GLUTEN_FREE" -> "без глютена"
-    "DAIRY_FREE" -> "без молока"
+    "LACTOSE_FREE" -> "без лактозы"
     "HALAL" -> "халяль"
     "KOSHER" -> "кошер"
     "LOW_CARB" -> "мало углеводов"
@@ -114,7 +114,7 @@ internal fun DislikeReasonSheet(
     FoodModalBottomSheet(
         onDismissRequest = onDismiss,
         modifier = modifier,
-    ) {
+    ) { dismiss ->
         Text(
             text = "Почему не нравится?",
             style = MaterialTheme.typography.headlineSmall,
@@ -166,6 +166,7 @@ internal fun DislikeReasonSheet(
                     val chosen = gridReasons.filter { (it.detail ?: it.code) in selected } +
                         listOfNotNull(other?.takeIf { !otherDetail.orEmpty().isBlank() }?.copy(detail = otherDetail))
                     onReasonsSelected(chosen)
+                    dismiss()
                 },
             )
         }

@@ -8,13 +8,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.devsgroup.foodmanager.core.designsystem.theme.FoodManagerTheme
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.launch
 
 /**
  * The brand modal bottom sheet: a scrim-backed panel that slides up from the
@@ -35,22 +44,56 @@ import com.devsgroup.foodmanager.core.designsystem.theme.FoodManagerTheme
  *
  * Visibility is driven by the caller (unidirectional data flow): render this only
  * while your state says the sheet is open, and flip that state back off from
- * [onDismissRequest] (scrim tap, swipe-down, or system back). Keeping the
- * experimental `SheetState` out of the signature is deliberate — it is what lets
- * callers stay free of the experimental `@OptIn`.
+ * [onDismissRequest] (scrim tap, swipe-down, or system back) — those gestures are
+ * handled by Material 3 internally, which animates the sheet away *before* calling
+ * [onDismissRequest], so removing the composable on that callback is invisible.
+ *
+ * A "confirm"/"done" button inside [content] has no such built-in animation — it's
+ * just a click handler — so [content] is handed a `dismiss` callback that plays the
+ * exact same hide animation before calling [onDismissRequest] itself. Buttons that
+ * close the sheet must call that `dismiss`, not [onDismissRequest]/the caller's own
+ * state setter directly, or the sheet will vanish instead of sliding away. Keeping
+ * the experimental `SheetState` itself out of the signature is deliberate — it is
+ * what lets callers stay free of the experimental `@OptIn`.
+ *
+ * If [content] holds a focused text field, the keyboard must not linger after the
+ * sheet is gone (or worse, hang around fighting the slide-down animation): the moment
+ * the sheet's target state flips to [SheetValue.Hidden] — by swipe, scrim tap, back,
+ * or [content]'s own `dismiss` call — focus is cleared and the IME is told to hide
+ * in step with the close animation, not after it.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FoodModalBottomSheet(
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit,
+    content: @Composable ColumnScope.(dismiss: () -> Unit) -> Unit,
 ) {
+    val sheetState = rememberModalBottomSheetState()
+    val scope = rememberCoroutineScope()
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(sheetState) {
+        snapshotFlow { sheetState.targetValue }
+            .filter { it == SheetValue.Hidden }
+            .collect {
+                focusManager.clearFocus(force = true)
+                keyboardController?.hide()
+            }
+    }
+
+    val dismiss: () -> Unit = {
+        scope.launch { sheetState.hide() }.invokeOnCompletion {
+            if (!sheetState.isVisible) onDismissRequest()
+        }
+    }
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
+        sheetState = sheetState,
         modifier = modifier,
     ) {
-        FoodSheetLayout(content = content)
+        FoodSheetLayout { content(dismiss) }
     }
 }
 

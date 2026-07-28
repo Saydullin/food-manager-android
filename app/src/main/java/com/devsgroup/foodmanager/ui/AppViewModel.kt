@@ -6,12 +6,14 @@ import com.devsgroup.foodmanager.core.domain.repository.AuthRepository
 import com.devsgroup.foodmanager.core.domain.repository.ProfileRepository
 import com.devsgroup.foodmanager.core.domain.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -38,6 +40,9 @@ sealed interface AppUiState {
  * resolves, so the graph is built once and later token changes don't rebuild it.
  * [AppUiState.darkThemeEnabled] is read continuously instead, since the profile
  * screen's theme toggle should switch the whole app live.
+ *
+ * [Ready] also waits on a minimum splash duration so the splash animation isn't cut
+ * short when everything above resolves instantly (e.g. warm DataStore reads).
  */
 @HiltViewModel
 class AppViewModel @Inject constructor(
@@ -46,11 +51,18 @@ class AppViewModel @Inject constructor(
     settingsRepository: SettingsRepository,
 ) : ViewModel() {
 
+    /** Emits once, after [SPLASH_MIN_DURATION_MS] — so the splash animation always gets to play out. */
+    private val minimumSplashDuration = flow {
+        delay(SPLASH_MIN_DURATION_MS)
+        emit(Unit)
+    }
+
     val uiState: StateFlow<AppUiState> = combine(
         authRepository.isLoggedIn,
         profileRepository.emailVerified,
         settingsRepository.darkThemeEnabled(),
-    ) { isLoggedIn, emailVerified, darkThemeEnabled ->
+        minimumSplashDuration,
+    ) { isLoggedIn, emailVerified, darkThemeEnabled, _ ->
         AppUiState.Ready(isLoggedIn = isLoggedIn, emailVerified = emailVerified, darkThemeEnabled = darkThemeEnabled)
     }
         .stateIn(
@@ -71,5 +83,9 @@ class AppViewModel @Inject constructor(
                 _forcedLogoutEvents.emit(Unit)
             }
         }
+    }
+
+    private companion object {
+        const val SPLASH_MIN_DURATION_MS = 1_000L
     }
 }

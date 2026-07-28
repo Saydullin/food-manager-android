@@ -1,12 +1,14 @@
 package com.devsgroup.foodmanager.feature.profile.presentation
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.scaleOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -17,6 +19,8 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.Modifier
 
 /** Shared spring so item fade/scale and the container's [animateContentSize] reflow in sync. */
 internal fun <T> itemSpring() = spring<T>(
@@ -32,20 +36,24 @@ private class AnimatedEntry<T>(item: T) {
 /**
  * Renders [items] inside a caller-supplied [layout] (a [FlowRow]/[Column]/etc.),
  * animating additions in (fade + scale) and removals out, while the surviving
- * siblings reflow into place — the caller only needs `Modifier.animateContentSize()`
- * on the [layout] it hands back. A removed item stays composed (and keeps playing
- * its exit animation) even after it drops out of [items], so callers can update
- * their backing state immediately without racing the animation.
+ * siblings reflow into place — the [layout] lambda receives a `sizeAnimationModifier`
+ * to attach for that reflow. The size animation is suppressed for the very first
+ * transition from empty to populated (e.g. initial data load), so the container
+ * doesn't visibly grow from nothing; it kicks in for subsequent adds/removes.
+ * A removed item stays composed (and keeps playing its exit animation) even after
+ * it drops out of [items], so callers can update their backing state immediately
+ * without racing the animation.
  */
 @Composable
 internal fun <T> AnimatedItemList(
     items: List<T>,
     keySelector: (T) -> Any,
-    layout: @Composable (content: @Composable () -> Unit) -> Unit,
+    layout: @Composable (sizeAnimationModifier: Modifier, content: @Composable () -> Unit) -> Unit,
     itemContent: @Composable (T) -> Unit,
 ) {
     val order = remember { mutableStateListOf<Any>() }
     val entries = remember { mutableStateMapOf<Any, AnimatedEntry<T>>() }
+    var animateSize by remember { mutableStateOf(false) }
 
     LaunchedEffect(items) {
         val currentKeys = items.map(keySelector).toSet()
@@ -66,7 +74,19 @@ internal fun <T> AnimatedItemList(
         }
     }
 
-    layout {
+    LaunchedEffect(order.isNotEmpty()) {
+        if (order.isEmpty()) {
+            animateSize = false
+        } else if (!animateSize) {
+            // Let the initial (unanimated) size land first, then enable animation for later changes.
+            withFrameNanos {}
+            animateSize = true
+        }
+    }
+
+    val sizeAnimationModifier = if (animateSize) Modifier.animateContentSize(itemSpring()) else Modifier
+
+    layout(sizeAnimationModifier) {
         order.toList().forEach { itemKey ->
             val entry = entries[itemKey] ?: return@forEach
             key(itemKey) {

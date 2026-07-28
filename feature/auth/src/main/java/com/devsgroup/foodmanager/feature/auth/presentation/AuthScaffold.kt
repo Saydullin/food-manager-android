@@ -56,8 +56,6 @@ internal fun AuthScaffold(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 32.dp),
     ) {
-//        BrandMark()
-
         Spacer(Modifier.height(40.dp))
 
         Text(
@@ -106,40 +104,6 @@ internal fun AuthFooter(
             text = action,
             onClick = onActionClick,
             compact = true
-        )
-    }
-}
-
-/**
- * The "НА УЖИН" wordmark: the app initial in an orange tile beside the tracked-out
- * name. Local to the auth feature for now — promote to `:core:designsystem` if a
- * second surface needs it.
- */
-@Composable
-private fun BrandMark(modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.primaryContainer),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = "Н",
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-            )
-        }
-        Text(
-            text = "НА УЖИН",
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Start,
         )
     }
 }

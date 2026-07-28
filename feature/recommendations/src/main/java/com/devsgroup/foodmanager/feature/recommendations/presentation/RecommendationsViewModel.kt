@@ -109,10 +109,10 @@ class RecommendationsViewModel @Inject constructor(
         _uiState.update { it.copy(showDislikeSheet = true) }
     }
 
-    /** Reasons were chosen in the sheet: record one negative signal per reason, close it, advance. */
+    /** Reasons were chosen in the sheet: record one negative signal per reason, advance. Closing the sheet is driven by its own dismiss animation, not this call. */
     fun onDislikeReasonsSelected(reasons: List<DislikeReason>) {
         val card = uiState.value.currentCard ?: return
-        _uiState.update { it.copy(showDislikeSheet = false, lastVerdict = RecommendationVerdict.DISLIKED) }
+        _uiState.update { it.copy(lastVerdict = RecommendationVerdict.DISLIKED) }
         reasons.forEach { reason -> recordSwipe(card.id, SwipeAction.DISLIKE, reason.code, reason.detail) }
     }
 
@@ -224,7 +224,7 @@ private fun dietLabel(code: String): String = when (code) {
     "VEGETARIAN" -> "Вег."
     "VEGAN" -> "Веган"
     "GLUTEN_FREE" -> "Без глютена"
-    "DAIRY_FREE" -> "Без молока"
+    "LACTOSE_FREE" -> "Без лактозы"
     "HALAL" -> "Халяль"
     "KOSHER" -> "Кошер"
     "LOW_CARB" -> "Мало углеводов"

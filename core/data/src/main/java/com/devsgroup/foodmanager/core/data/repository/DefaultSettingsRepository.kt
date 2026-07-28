@@ -73,10 +73,32 @@ class DefaultSettingsRepository @Inject constructor(
         localSnapshot()
     }
 
+    /**
+     * Applies [request] to the local cache immediately so the UI (a switch, a radio
+     * choice) flips right away instead of waiting on the network round trip, then
+     * syncs it to the server in the background. On failure the optimistic value is
+     * kept — same offline-friendly stance as [fetchSettings].
+     */
     private suspend fun updateSettings(request: UpdateSettingsRequest) {
-        val updated = apiCall { settingsApi.updateSettings(request).settings }
-        cache.value = updated
-        persistLocally(updated)
+        val current = cache.value ?: fetchSettings()
+        val optimistic = current.copy(
+            language = request.language ?: current.language,
+            theme = request.theme ?: current.theme,
+            pushNotificationsEnabled = request.pushNotificationsEnabled ?: current.pushNotificationsEnabled,
+        )
+        cache.value = optimistic
+        persistLocally(optimistic)
+        try {
+            val updated = apiCall { settingsApi.updateSettings(request).settings }
+            cache.value = updated
+            persistLocally(updated)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            // Offline — keep the optimistic value, matching fetchSettings' fallback.
+        } catch (e: HttpException) {
+            // Server rejected it — keep the optimistic value rather than reverting mid-interaction.
+        }
     }
 
     /** What the app showed before this session ever talked to the server, for offline use. */

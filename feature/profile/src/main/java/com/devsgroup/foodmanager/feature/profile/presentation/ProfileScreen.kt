@@ -125,14 +125,18 @@ private fun ProfileContent(
                 verticalArrangement = Arrangement.spacedBy(28.dp)
             ) {
                 ProfileHeader(profile = uiState.profile, isBanned = uiState.isBanned, onEditClick = onEditProfileClick)
-                TasteProfileSection(
+                PreferredTagsSection(
                     favoriteTags = uiState.favoriteTags,
-                    avoidTags = uiState.avoidTags,
-                    dietTags = uiState.dietTags,
                     onAddFavoriteTagClick = onAddFavoriteTagClick,
                     onRemoveFavoriteTag = onRemoveFavoriteTag,
+                )
+                AvoidedTagsSection(
+                    avoidTags = uiState.avoidTags,
                     onAddAvoidTagClick = onAddAvoidTagClick,
                     onRemoveAvoidTag = onRemoveAvoidTag,
+                )
+                DietSection(
+                    dietTags = uiState.dietTags,
                     onDietClick = onDietClick,
                 )
                 GroupsSection(
@@ -144,10 +148,6 @@ private fun ProfileContent(
                 MyRecipesSection(
                     recipes = uiState.myRecipes,
                     onCreateClick = onCreateRecipeClick,
-                )
-                LikedDishesSection(
-                    likedFoods = uiState.likedFoods,
-                    onUnlike = onUnlikeFood,
                 )
                 SettingsSection(
                     notificationsEnabled = uiState.notificationsEnabled,
@@ -198,7 +198,7 @@ private fun ProfileContent(
 
         is ProfileSheet.NewGroup -> TextInputSheet(
             title = "Новая группа",
-            helper = "Название группы — потом позовёте туда близких",
+            helper = "Название группы - потом позовёте туда близких",
             fieldLabel = "НАЗВАНИЕ",
             value = sheet.input,
             onValueChange = onSheetInputChange,

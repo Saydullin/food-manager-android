@@ -157,9 +157,8 @@ private fun EditProfileContent(
         FoodTextField(
             value = uiState.username,
             onValueChange = onUsernameChange,
-            label = "НИКНЕЙМ",
+            label = "УНИКАЛЬНЫЙ НИКНЕЙМ",
             placeholder = "nickname",
-            description = "Отображается с «@» перед именем".takeIf { uiState.usernameError == null },
             isError = uiState.usernameError != null,
             errorMessage = uiState.usernameError,
             keyboardOptions = KeyboardOptions(

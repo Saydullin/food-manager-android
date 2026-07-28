@@ -35,7 +35,7 @@ internal fun TextInputSheet(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    FoodModalBottomSheet(onDismissRequest = onDismiss, modifier = modifier) {
+    FoodModalBottomSheet(onDismissRequest = onDismiss, modifier = modifier) { dismiss ->
         Text(text = title, style = MaterialTheme.typography.headlineSmall)
         Text(
             text = helper,
@@ -49,12 +49,12 @@ internal fun TextInputSheet(
             label = fieldLabel,
             placeholder = placeholder,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(onDone = { onSubmit() }),
+            keyboardActions = KeyboardActions(onDone = { onSubmit(); dismiss() }),
         )
         Spacer(Modifier.height(20.dp))
         FoodButton(
             text = submitLabel,
-            onClick = onSubmit,
+            onClick = { onSubmit(); dismiss() },
             enabled = value.isNotBlank(),
             modifier = Modifier.fillMaxWidth(),
         )

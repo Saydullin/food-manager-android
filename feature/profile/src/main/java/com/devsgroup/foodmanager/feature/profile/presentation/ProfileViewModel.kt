@@ -16,6 +16,7 @@ import com.devsgroup.foodmanager.core.model.Recipe
 import com.devsgroup.foodmanager.core.model.UserGroup
 import com.devsgroup.foodmanager.core.model.UserProfile
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -211,43 +212,58 @@ class ProfileViewModel @Inject constructor(
     fun onSubmitFavoriteTag() {
         val tag = (localState.value.sheet as? ProfileSheet.AddFavoriteTag)?.input?.trim()
         if (tag.isNullOrBlank()) return
-        openSheet(null)
         viewModelScope.launch {
-            val current = profileRepository.profile().first().foodPreferences
-            profileRepository.updateFoodPreferences(current + tag)
+            runCatching {
+                val current = profileRepository.profile().first().foodPreferences
+                profileRepository.updateFoodPreferences(current + tag)
+            }.onFailure(::onMutationFailure)
         }
     }
 
     fun onSubmitAvoidTag() {
         val tag = (localState.value.sheet as? ProfileSheet.AddAvoidTag)?.input?.trim()
         if (tag.isNullOrBlank()) return
-        openSheet(null)
         viewModelScope.launch {
-            val current = profileRepository.profile().first().foodExceptions
-            profileRepository.updateFoodExceptions(current + tag)
+            runCatching {
+                val current = profileRepository.profile().first().foodExceptions
+                profileRepository.updateFoodExceptions(current + tag)
+            }.onFailure(::onMutationFailure)
         }
     }
 
     fun onRemoveFavoriteTag(tag: String) {
         viewModelScope.launch {
-            val current = profileRepository.profile().first().foodPreferences
-            profileRepository.updateFoodPreferences(current - tag)
+            runCatching {
+                val current = profileRepository.profile().first().foodPreferences
+                profileRepository.updateFoodPreferences(current - tag)
+            }.onFailure(::onMutationFailure)
         }
     }
 
     fun onRemoveAvoidTag(tag: String) {
         viewModelScope.launch {
-            val current = profileRepository.profile().first().foodExceptions
-            profileRepository.updateFoodExceptions(current - tag)
+            runCatching {
+                val current = profileRepository.profile().first().foodExceptions
+                profileRepository.updateFoodExceptions(current - tag)
+            }.onFailure(::onMutationFailure)
         }
     }
 
     fun onToggleDietTag(tag: DietaryTag) {
         viewModelScope.launch {
-            val current = profileRepository.profile().first().diets
-            val updated = if (tag.name in current) current - tag.name else current + tag.name
-            profileRepository.updateDiets(updated)
+            runCatching {
+                val current = profileRepository.profile().first().diets
+                val updated = if (tag.name in current) current - tag.name else current + tag.name
+                profileRepository.updateDiets(updated)
+            }.onFailure(::onMutationFailure)
         }
+    }
+
+    /** Surfaces a failed taste-profile edit as a toast instead of crashing; rethrows anything unexpected. */
+    private fun onMutationFailure(e: Throwable) {
+        if (e is CancellationException) throw e
+        if (e !is ProfileException) throw e
+        showToast(e.toDisplayMessage(), isError = true)
     }
 
     // --- Groups ---------------------------------------------------------
@@ -255,7 +271,6 @@ class ProfileViewModel @Inject constructor(
     fun onSubmitNewGroup() {
         val name = (localState.value.sheet as? ProfileSheet.NewGroup)?.input?.trim()
         if (name.isNullOrBlank()) return
-        openSheet(null)
         viewModelScope.launch {
             groupRepository.createGroup(name)
             showToast("Группа «$name» создана")
@@ -291,7 +306,6 @@ class ProfileViewModel @Inject constructor(
 
     fun onSelectLanguage(language: AppLanguage) {
         viewModelScope.launch { settingsRepository.setLanguage(language) }
-        openSheet(null)
     }
 
     fun onHelpClick() {

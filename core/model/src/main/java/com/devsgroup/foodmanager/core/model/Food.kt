@@ -52,13 +52,11 @@ enum class Cuisine {
     OTHER,
 }
 
+/** Mirrors the server's fixed `GET /diets` catalog (see `add_diets` migration) exactly — an entry here that the server doesn't know sends an unrecognized code and 400s. */
 enum class DietaryTag {
     VEGETARIAN,
     VEGAN,
-    GLUTEN_FREE,
-    DAIRY_FREE,
     HALAL,
-    KOSHER,
-    LOW_CARB,
-    SPICY,
+    LACTOSE_FREE,
+    GLUTEN_FREE,
 }

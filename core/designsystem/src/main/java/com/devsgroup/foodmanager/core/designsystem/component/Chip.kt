@@ -146,7 +146,7 @@ private fun ChipContent(label: String, leadingEmoji: String?, showRemove: Boolea
         if (leadingEmoji != null) {
             Text(text = leadingEmoji, style = MaterialTheme.typography.bodyMedium)
         }
-        Text(text = label, style = MaterialTheme.typography.labelMedium)
+        Text(text = label, style = MaterialTheme.typography.labelLarge)
         if (showRemove) {
             Icon(
                 painter = painterResource(R.drawable.ic_close),
