@@ -59,7 +59,18 @@ class DefaultProfileRepository @Inject constructor(
 
     private val cache = MutableStateFlow<UserProfile?>(null)
 
-    override val emailVerified: Flow<Boolean> = profilePrefs.profileFlow.map { it?.emailVerified ?: false }
+    /**
+     * The server's answer, cached in DataStore (see [persistServerProfile]).
+     *
+     * Absent profile — logged in but nothing fetched or persisted yet — reports **true**,
+     * i.e. "don't gate", for the same asymmetry as [onboardingComplete]: wrongly gating a
+     * verified account is a lockout with no way out of it (the confirmation screen can
+     * only ask for a code the user was never sent), while wrongly letting an unverified
+     * one through costs nothing that the next launch doesn't correct. And the case that
+     * genuinely needs the gate is never unknown — registration and code-login both seed a
+     * profile carrying the server's `emailVerified` before the gate ever runs.
+     */
+    override val emailVerified: Flow<Boolean> = profilePrefs.profileFlow.map { it?.emailVerified ?: true }
 
     override val isBanned: Flow<Boolean> = authPrefs.accountBannedFlow
 
@@ -219,19 +230,20 @@ class DefaultProfileRepository @Inject constructor(
 
     /**
      * Merges a fresh server profile over the local one and persists it. [identityFrom]
-     * supplies the fields the wire schema doesn't carry (`email`, `emailVerified`,
-     * `cookingAttitude`) — the caller's own edit where there is one, otherwise whatever
-     * was cached. Any list still queued for the server keeps its local value: the
-     * response predates that edit, so adopting its copy would silently undo it.
+     * supplies `cookingAttitude`, the one field the wire schema doesn't carry — the
+     * caller's own edit where there is one, otherwise whatever was cached. `email` and
+     * `emailVerified` are deliberately *not* carried forward: they're account state the
+     * server owns (both `/users/me` and `auth/email/add` update them there), so the
+     * response is the authority. Preserving the local copy instead is what used to
+     * strand a verified account on the confirmation gate forever — a device that didn't
+     * itself do the verification had no way to ever learn otherwise. Any list still
+     * queued for the server keeps its local value: the response predates that edit, so
+     * adopting its copy would silently undo it.
      */
     private suspend fun persistServerProfile(server: UserProfile, identityFrom: UserProfile? = null): UserProfile {
         val previous = cache.value ?: profilePrefs.currentProfile()
         val identity = identityFrom ?: previous
-        var merged = server.copy(
-            email = identity?.email,
-            emailVerified = identity?.emailVerified ?: false,
-            cookingAttitude = identity?.cookingAttitude,
-        )
+        var merged = server.copy(cookingAttitude = identity?.cookingAttitude)
         if (previous != null) {
             for (list in profilePrefs.pendingSyncLists()) {
                 merged = merged.withValues(list, previous.valuesOf(list))

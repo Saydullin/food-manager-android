@@ -31,6 +31,8 @@ data class EmailConfirmationUiState(
     val isConfirming: Boolean = false,
     val isResending: Boolean = false,
     val resendMessage: String? = null,
+    /** Whether [resendMessage] reports a failure — it carries both outcomes. */
+    val resendFailed: Boolean = false,
     val isChangingEmail: Boolean = false,
     val newEmail: String = "",
     val newEmailError: String? = null,
@@ -54,6 +56,10 @@ class EmailConfirmationViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
+            // profile() only emits once something is cached (it filters nulls), so ask
+            // before collecting — on an account this device has never fetched, awaiting
+            // it would hang here and leave the address blank with no explanation.
+            if (!profileRepository.hasCachedProfile()) return@launch
             val email = runCatching { profileRepository.profile().first().email }.getOrNull()
             if (!email.isNullOrBlank()) {
                 _uiState.update { it.copy(email = email) }
@@ -66,7 +72,7 @@ class EmailConfirmationViewModel @Inject constructor(
         _uiState.update { it.copy(code = digits, codeError = null) }
     }
 
-    /** Confirms the mailed code, marks the profile's email as verified, then hands off. */
+    /** Confirms the mailed code, pulls the now-verified profile, then hands off. */
     fun onConfirm(onConfirmed: () -> Unit) {
         val state = _uiState.value
         if (state.code.length != EMAIL_CODE_LENGTH) return
@@ -75,21 +81,39 @@ class EmailConfirmationViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 authRepository.verifyEmailByCode(state.code)
-                val current = profileRepository.profile().first()
-                profileRepository.updateProfile(current.copy(email = state.email, emailVerified = true))
-                onConfirmed()
             } catch (e: AuthException) {
                 _uiState.update { it.copy(isConfirming = false, codeError = e.toVerifyMessage()) }
+                return@launch
             }
+            // The account is verified server-side now; fetch so the stored profile — and
+            // the app-level gate reading it — agree. Best-effort on purpose: the
+            // verification already succeeded, so a failure here must not strand the user
+            // on this screen. The next launch resolves it against the server anyway.
+            runCatching { profileRepository.refresh() }
+            onConfirmed()
         }
     }
 
     /** Re-sends the verification code to the address currently on file. */
     fun onResendCode() {
         val email = _uiState.value.email
-        if (email.isBlank()) return
+        if (email.isBlank()) {
+            // Nothing to send to, and silently doing nothing here is what made this
+            // screen a dead end: no code arrives, no error explains why. Open the
+            // change-email form instead — supplying an address is the way out.
+            _uiState.update {
+                it.copy(
+                    resendMessage = "Мы не знаем вашего адреса — укажите его ниже",
+                    resendFailed = true,
+                    isChangingEmail = true,
+                )
+            }
+            return
+        }
 
-        _uiState.update { it.copy(isResending = true, resendMessage = null, codeError = null) }
+        _uiState.update {
+            it.copy(isResending = true, resendMessage = null, resendFailed = false, codeError = null)
+        }
         viewModelScope.launch {
             try {
                 authRepository.addEmail(email)
@@ -97,7 +121,9 @@ class EmailConfirmationViewModel @Inject constructor(
                     it.copy(isResending = false, resendMessage = "Код отправлен повторно", code = "")
                 }
             } catch (e: AuthException) {
-                _uiState.update { it.copy(isResending = false, resendMessage = e.toSendMessage()) }
+                _uiState.update {
+                    it.copy(isResending = false, resendMessage = e.toSendMessage(), resendFailed = true)
+                }
             }
         }
     }
@@ -130,8 +156,10 @@ class EmailConfirmationViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 authRepository.addEmail(newEmail)
-                val current = profileRepository.profile().first()
-                profileRepository.updateProfile(current.copy(email = newEmail, emailVerified = false))
+                // addEmail moves the address (and clears verification) server-side, so a
+                // fetch is all it takes to mirror that locally — best-effort, since the
+                // code is already on its way and the user needs this screen either way.
+                runCatching { profileRepository.refresh() }
                 _uiState.update {
                     it.copy(
                         email = newEmail,
@@ -141,6 +169,7 @@ class EmailConfirmationViewModel @Inject constructor(
                         code = "",
                         codeError = null,
                         resendMessage = "Код отправлен на новый адрес",
+                        resendFailed = false,
                     )
                 }
             } catch (e: AuthException) {

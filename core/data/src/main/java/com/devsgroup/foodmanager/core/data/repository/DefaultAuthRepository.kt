@@ -208,6 +208,21 @@ class DefaultAuthRepository @Inject constructor(
         authPrefs.updateTokens(response.accessToken, response.refreshToken)
         authPrefs.updateDeviceId(response.device.id)
         authPrefs.updateUsername(response.user.username)
+        // Same baseline seed as register(): without it this device has no stored profile
+        // at all, and the first `/users/me` merge would write one back with whatever the
+        // wire response happens to say about an account this install knows nothing about.
+        // Signing in by mailed code also *proves* the address — the server only sends
+        // that code to an already-verified email — so `emailVerified` from the response
+        // is what stops the email gate from re-asking on a device that never verified.
+        profileRepository.invalidateCache()
+        profilePrefs.saveProfile(
+            UserProfile(
+                name = response.user.username,
+                username = "@${response.user.username}",
+                email = response.user.email ?: email,
+                emailVerified = response.user.emailVerified,
+            ),
+        )
         response.toDomain()
     }
 

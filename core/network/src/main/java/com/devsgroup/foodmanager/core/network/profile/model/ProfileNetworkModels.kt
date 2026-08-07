@@ -47,6 +47,13 @@ data class SetDietsRequest(val diets: List<String>)
 data class ProfileUserDto(
     val id: String,
     val username: String,
+    /**
+     * The address currently on file, and whether it has been confirmed. Both are
+     * account state the server owns — a device that didn't itself perform the
+     * verification (a code login, a reinstall) can only learn them from here.
+     */
+    val email: String? = null,
+    val emailVerified: Boolean = false,
     val name: String? = null,
     val imageUrl: String? = null,
     val age: Int? = null,

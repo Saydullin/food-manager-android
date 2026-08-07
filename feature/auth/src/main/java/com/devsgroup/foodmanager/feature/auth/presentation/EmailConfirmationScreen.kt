@@ -70,7 +70,14 @@ private fun EmailConfirmationContent(
 ) {
     AuthScaffold(
         title = "Подтвердите\nпочту",
-        subtitle = "Мы отправили код на ${uiState.email}. Введите его, чтобы подтвердить почту.",
+        // The address is unknown on a device that never fetched this account's profile
+        // (a code login, a reinstall). Claiming a code was sent "to ." there is worse
+        // than admitting we don't know — the way forward is to supply one below.
+        subtitle = if (uiState.email.isBlank()) {
+            "Укажите адрес почты ниже, чтобы получить код подтверждения."
+        } else {
+            "Мы отправили код на ${uiState.email}. Введите его, чтобы подтвердить почту."
+        },
         modifier = modifier,
     ) {
         FoodTextField(
@@ -93,10 +100,10 @@ private fun EmailConfirmationContent(
             Text(
                 text = uiState.resendMessage,
                 style = MaterialTheme.typography.bodySmall,
-                color = if (uiState.codeError != null) {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                } else {
+                color = if (uiState.resendFailed) {
                     MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
                 },
             )
         }

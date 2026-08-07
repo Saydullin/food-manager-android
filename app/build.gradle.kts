@@ -128,7 +128,11 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     // Test
+    testImplementation(project(":core:testing"))
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.turbine)
+    testImplementation(libs.mockk)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
