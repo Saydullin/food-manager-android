@@ -23,7 +23,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
@@ -65,19 +64,36 @@ class DefaultProfileRepository @Inject constructor(
     override val isBanned: Flow<Boolean> = authPrefs.accountBannedFlow
 
     /**
-     * The stored flag, OR any taste data already on the account — see the contract for
-     * why the second half matters. Reading the profile from DataStore rather than the
-     * in-memory cache keeps this answerable on a cold start, before any network refresh.
+     * The account's own answer, cached in DataStore (read from there rather than the
+     * in-memory cache so it survives a cold start).
+     *
+     * Absent profile — logged in but nothing fetched or persisted yet — reports **true**,
+     * i.e. "don't ask". The two ways to be wrong are not symmetric: re-interrogating
+     * someone who already answered is the annoyance this default exists to prevent, while
+     * failing to ask costs a user nothing they can't fix from the profile screen. And the
+     * case that actually needs asking is never unknown — registration seeds a baseline
+     * profile (`onboardingCompleted = false`) before the gate ever runs.
      */
     override val onboardingComplete: Flow<Boolean> =
-        combine(profilePrefs.onboardingCompleteFlow, profilePrefs.profileFlow) { completed, profile ->
-            completed || profile?.hasTasteData() == true
+        profilePrefs.profileFlow.map { it?.onboardingCompleted ?: true }
+
+    /**
+     * Latches onboarding as answered: locally first so the gate stops asking immediately
+     * and across restarts, then best-effort on the server, which is what makes it hold
+     * across logout/login and on other devices. A failed push is not an error the user
+     * needs to see — [refresh] retries it (the endpoint is idempotent).
+     */
+    override suspend fun completeOnboarding() {
+        val previous = cache.value ?: profilePrefs.currentProfile()
+        if (previous != null && !previous.onboardingCompleted) {
+            val local = previous.copy(onboardingCompleted = true)
+            cache.value = local
+            profilePrefs.saveProfile(local)
         }
-
-    private fun UserProfile.hasTasteData(): Boolean =
-        diets.isNotEmpty() || foodExceptions.isNotEmpty() || foodPreferences.isNotEmpty()
-
-    override suspend fun completeOnboarding() = profilePrefs.setOnboardingComplete()
+        runCatching { apiCall { profileApi.completeOnboarding().user.toDomain() } }
+            .onSuccess { persistServerProfile(it) }
+            .onFailure { Log.i(TAG, "Onboarding marked locally; will retry on next refresh: ${it.message}") }
+    }
 
     override fun invalidateCache() {
         cache.value = null
@@ -97,12 +113,23 @@ class DefaultProfileRepository @Inject constructor(
         cache.value != null || profilePrefs.currentProfile() != null
 
     override suspend fun refresh() {
+        val localSaysOnboarded = profilePrefs.currentProfile()?.onboardingCompleted == true
         val server = apiCall {
             val user = profileApi.myProfile().user
             authPrefs.updateAccountBanned(user.isBanned)
             user.toDomain()
         }
-        persistServerProfile(server)
+        // This device recorded a completion the server never heard about (it was offline
+        // when onboarding finished). Push it now instead of adopting the server's older
+        // "never asked", which would put the user back through the questions. If the retry
+        // itself fails, keep the local answer for the same reason.
+        val reconciled = when {
+            localSaysOnboarded && !server.onboardingCompleted ->
+                runCatching { apiCall { profileApi.completeOnboarding().user.toDomain() } }
+                    .getOrElse { server.copy(onboardingCompleted = true) }
+            else -> server
+        }
+        persistServerProfile(reconciled)
         // A successful round-trip means connectivity is back, so give any edit still
         // queued from an offline session its chance to reach the server.
         if (profilePrefs.pendingSyncLists().isNotEmpty()) profileSyncScheduler.scheduleSync()

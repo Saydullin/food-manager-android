@@ -11,6 +11,12 @@ data class UserProfile(
     val age: Int? = null,
     val cookingAttitude: CookingAttitude? = null,
     val bio: String? = null,
+    /**
+     * Whether this account has answered (or declined) the onboarding questions. Owned by
+     * the server so it holds across logout/login and across devices — a device-local flag
+     * would re-ask on every sign-in and every reinstall.
+     */
+    val onboardingCompleted: Boolean = false,
     val foodPreferences: List<String> = emptyList(),
     val foodExceptions: List<String> = emptyList(),
     val diets: List<String> = emptyList(),

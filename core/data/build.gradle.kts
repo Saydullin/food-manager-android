@@ -16,6 +16,15 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+    testOptions {
+        unitTests {
+            // The repositories here log via android.util.Log, which throws "not mocked" in a
+            // JVM unit test. Worse than the noise: a Log call inside a runCatching block gets
+            // swallowed, so a test can pass while the path it claims to exercise actually
+            // aborted early. Stubbing android.jar to return defaults makes logging a no-op.
+            isReturnDefaultValues = true
+        }
+    }
 }
 
 dependencies {

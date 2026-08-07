@@ -10,6 +10,7 @@ import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.PATCH
+import retrofit2.http.POST
 import retrofit2.http.PUT
 
 /**
@@ -40,4 +41,12 @@ interface ProfileApi {
 
     @PUT("users/me/diets")
     suspend fun setDiets(@Body body: SetDietsRequest): ProfileResponse
+
+    /**
+     * Latches this account as onboarded. Takes no body and is idempotent, so it's safe to
+     * re-send — which the repository does when a completion recorded offline hasn't
+     * reached the server yet.
+     */
+    @POST("users/me/onboarding-complete")
+    suspend fun completeOnboarding(): ProfileResponse
 }

@@ -1,10 +1,12 @@
 package com.devsgroup.foodmanager.feature.auth.presentation
 
+import android.util.Log
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.devsgroup.foodmanager.core.domain.repository.AuthRepository
 import com.devsgroup.foodmanager.core.domain.repository.DeviceKeyRepository
+import com.devsgroup.foodmanager.core.domain.repository.ProfileRepository
 import com.devsgroup.foodmanager.core.model.AuthException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,6 +16,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+private const val TAG = "LoginViewModel"
 
 /** Digits in the login code the server mails to a device with no existing key. */
 private const val LOGIN_CODE_LENGTH = 4
@@ -59,10 +63,28 @@ data class LoginUiState(
 class LoginViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val deviceKeyRepository: DeviceKeyRepository,
+    private val profileRepository: ProfileRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
+
+    /**
+     * Pulls the account's profile before handing off into the app.
+     *
+     * Logout clears the locally cached profile, so straight after a login this device
+     * knows nothing about the account — including whether it has already been through
+     * onboarding, which the app-level gate is about to decide on. Fetching first means
+     * that decision uses the account's real answer rather than a default.
+     *
+     * Best-effort: a login must not fail because this request did. When it does fail the
+     * gate falls back to not asking (see `ProfileRepository.onboardingComplete`), so an
+     * offline login lands in the app rather than in the questions.
+     */
+    private suspend fun primeProfileBeforeHandoff() {
+        runCatching { profileRepository.refresh() }
+            .onFailure { Log.i(TAG, "Could not fetch profile before hand-off: ${it.message}") }
+    }
 
     fun onUsernameChange(value: String) {
         _uiState.update {
@@ -108,6 +130,7 @@ class LoginViewModel @Inject constructor(
                 val challenge = authRepository.requestChallenge(state.username.trim())
                 val signature = deviceKeyRepository.sign(challenge.nonce)
                 authRepository.verify(challenge.challengeId, signature, deviceId)
+                primeProfileBeforeHandoff()
                 onAuthenticated()
             } catch (e: AuthException) {
                 if (e is AuthException.Unauthorized) {
@@ -187,6 +210,7 @@ class LoginViewModel @Inject constructor(
                     code = state.code,
                     newPublicKey = publicKey,
                 )
+                primeProfileBeforeHandoff()
                 onAuthenticated()
             } catch (e: AuthException) {
                 _uiState.update { it.copy(isConfirmingCode = false, codeError = e.toConfirmCodeMessage()) }

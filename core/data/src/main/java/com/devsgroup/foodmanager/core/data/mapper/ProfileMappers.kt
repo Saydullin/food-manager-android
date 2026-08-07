@@ -16,6 +16,7 @@ internal fun ProfileUserDto.toDomain() = UserProfile(
     statusEmoji = status,
     age = age,
     bio = description,
+    onboardingCompleted = onboardingCompleted,
     foodPreferences = foodPreferences,
     foodExceptions = foodExceptions,
     diets = diets,

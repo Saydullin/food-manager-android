@@ -53,6 +53,12 @@ data class ProfileUserDto(
     val status: String? = null,
     val description: String? = null,
     val isBanned: Boolean = false,
+    /**
+     * Whether this *account* has been through the onboarding questions — so they're
+     * asked once per user rather than once per install. Defaults to false for a response
+     * from a server that predates the field; the worst case is asking once more.
+     */
+    val onboardingCompleted: Boolean = false,
     val foodPreferences: List<String> = emptyList(),
     val foodExceptions: List<String> = emptyList(),
     val diets: List<String> = emptyList(),

@@ -46,19 +46,6 @@ class ProfilePreferencesDataSource @Inject constructor(
         ProfilePreferenceList.entries.filterTo(mutableSetOf()) { prefs[it.pendingKey] == true }
     }
 
-    /**
-     * Whether this device has taken the signed-in account through the onboarding
-     * questions. Stored locally rather than derived from the server because "I have no
-     * diets and no allergies" is a perfectly good set of answers, and it is
-     * indistinguishable on the wire from never having been asked — deriving it would
-     * re-ask those users forever. Cleared with the rest of the profile on logout, so the
-     * next account to sign in gets asked for itself.
-     */
-    val onboardingCompleteFlow: Flow<Boolean> = preferences.map { it[ONBOARDING_COMPLETE] == true }
-
-    suspend fun setOnboardingComplete() {
-        dataStore.edit { prefs -> prefs[ONBOARDING_COMPLETE] = true }
-    }
 
     suspend fun currentProfile(): UserProfile? = profileFlow.first()
 
@@ -69,6 +56,9 @@ class ProfilePreferencesDataSource @Inject constructor(
             prefs[NAME] = profile.name
             prefs[USERNAME] = profile.username
             prefs[EMAIL_VERIFIED] = profile.emailVerified
+            // Server-owned (see UserProfile.onboardingCompleted); cached here so the
+            // onboarding gate can answer offline without re-asking.
+            prefs[ONBOARDING_COMPLETE] = profile.onboardingCompleted
             profile.email.putOrRemove(prefs, EMAIL)
             profile.avatarUrl.putOrRemove(prefs, AVATAR_URL)
             profile.statusEmoji.putOrRemove(prefs, STATUS_EMOJI)
@@ -147,6 +137,7 @@ class ProfilePreferencesDataSource @Inject constructor(
             username = username,
             email = this[EMAIL],
             emailVerified = this[EMAIL_VERIFIED] ?: false,
+            onboardingCompleted = this[ONBOARDING_COMPLETE] ?: false,
             avatarUrl = this[AVATAR_URL],
             statusEmoji = this[STATUS_EMOJI],
             age = this[AGE],

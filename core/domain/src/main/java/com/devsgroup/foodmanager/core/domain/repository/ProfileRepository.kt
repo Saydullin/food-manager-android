@@ -13,13 +13,18 @@ interface ProfileRepository {
     val isBanned: Flow<Boolean>
 
     /**
-     * True once this account has answered the onboarding questions — the app-level gate
-     * sends a signed-in user who hasn't into the onboarding flow instead of the feed.
+     * True once this **account** has answered (or declined) the onboarding questions — the
+     * app-level gate sends a signed-in user who hasn't into the onboarding flow instead of
+     * the feed.
      *
-     * Also true for an account that already carries taste data (diets, exceptions or
-     * preferences set from the profile screen, or by onboarding on another device): those
-     * users have already told us what onboarding would ask, so asking again would be
-     * pointless. That's what makes a reinstall or a second device skip the questions.
+     * Owned by the server, not the install, so the questions are asked once per user
+     * rather than once per sign-in: a device-local flag is wiped by logout and by
+     * reinstalling, and would also wrongly skip the questions for a *different* account
+     * signing in on the same phone.
+     *
+     * Reports true when the answer isn't known yet, so an unavoidable gap in knowledge
+     * never re-interrogates someone who already answered. See the implementation for why
+     * that default is safe.
      */
     val onboardingComplete: Flow<Boolean>
 
@@ -67,9 +72,13 @@ interface ProfileRepository {
     suspend fun updateDiets(diets: List<String>)
 
     /**
-     * Records that onboarding has been answered, flipping [onboardingComplete]. Called
-     * after the answers themselves are saved, so a user who quits part-way through is
-     * asked again rather than left with a half-filled profile.
+     * Records on the account that onboarding has been answered, flipping
+     * [onboardingComplete]. Called after the answers themselves are saved, so a user who
+     * quits part-way through is asked again rather than left with a half-filled profile.
+     *
+     * Local-first and best-effort on the server: it never throws, because a user who has
+     * finished the questions should leave the flow whether or not the latch reached the
+     * server. [refresh] retries an undelivered one.
      */
     suspend fun completeOnboarding()
 }
