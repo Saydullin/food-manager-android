@@ -21,7 +21,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
@@ -94,17 +93,7 @@ class ProfileViewModel @Inject constructor(
     private val localState = MutableStateFlow(LocalUiState())
 
     private val repositoryState = combine(
-        profileRepository.profile()
-            .catch { e ->
-                if (e !is ProfileException) throw e
-                // A connectivity failure while just loading the screen shouldn't
-                // interrupt the user with a toast — only surface it when they
-                // actively try to save/change something (see EditProfileViewModel).
-                if (e !is ProfileException.Network) {
-                    showToast(e.toDisplayMessage(), isError = true)
-                }
-                emit(UserProfile(name = "", username = ""))
-            },
+        profileRepository.profile(),
         groupRepository.groups(),
         recipeRepository.myRecipes(),
         foodRepository.likedFoods(),
@@ -158,25 +147,31 @@ class ProfileViewModel @Inject constructor(
     )
 
     init {
-        // Refresh-on-launch: the profile repository's cache is process-lifetime, so
-        // without this a returning user would see whatever was fetched last time
-        // instead of picking up server-side changes (e.g. edits from another device).
-        viewModelScope.launch { refreshProfile(showErrorToast = false) }
+        // The screen already shows whatever's cached (see profileRepository.profile()),
+        // so this just brings it up to date with the server in the background.
+        viewModelScope.launch { refreshProfile() }
     }
 
     /** Pull-to-refresh entry point from the screen. */
     fun onRefresh() {
-        viewModelScope.launch { refreshProfile(showErrorToast = true) }
+        viewModelScope.launch { refreshProfile() }
     }
 
-    private suspend fun refreshProfile(showErrorToast: Boolean) {
-        localState.update { it.copy(isRefreshing = true) }
+    /**
+     * Refreshes from the server. If cached data is already showing, this happens
+     * silently — no loader, no error toast — since the user already has something
+     * to look at. Only when there's nothing cached yet does this surface as a
+     * pull-to-refresh spinner with an error toast on failure.
+     */
+    private suspend fun refreshProfile() {
+        val hasCachedProfile = profileRepository.hasCachedProfile()
+        if (!hasCachedProfile) localState.update { it.copy(isRefreshing = true) }
         try {
             profileRepository.refresh()
         } catch (e: ProfileException) {
-            if (showErrorToast) showToast(e.toDisplayMessage(), isError = true)
+            if (!hasCachedProfile) showToast(e.toDisplayMessage(), isError = true)
         } finally {
-            localState.update { it.copy(isRefreshing = false) }
+            if (!hasCachedProfile) localState.update { it.copy(isRefreshing = false) }
         }
     }
 

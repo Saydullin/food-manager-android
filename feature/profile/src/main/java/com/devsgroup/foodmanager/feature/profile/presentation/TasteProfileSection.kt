@@ -19,6 +19,9 @@ import com.devsgroup.foodmanager.core.designsystem.component.FoodChipTone
 import com.devsgroup.foodmanager.core.designsystem.component.FoodTagChip
 import com.devsgroup.foodmanager.core.designsystem.theme.FoodManagerTheme
 import com.devsgroup.foodmanager.core.model.DietaryTag
+import com.devsgroup.foodmanager.core.ui.emoji
+import com.devsgroup.foodmanager.core.ui.label
+import com.devsgroup.foodmanager.core.ui.tasteTagLabel
 
 /**
  * "Предпочтения" — liked tags learned from the user's swipes.
@@ -53,7 +56,10 @@ internal fun PreferredTagsSection(
                 )
             },
         ) { tag ->
-            FoodTagChip(label = tag, onRemove = { onRemoveFavoriteTag(tag) })
+            // Onboarding contributes canonical codes ("ITALIAN"); the "Добавить" sheet
+            // contributes free text. tasteTagLabel translates the former and passes the
+            // latter through, so a chip never shows a raw wire code.
+            FoodTagChip(label = tasteTagLabel(tag), onRemove = { onRemoveFavoriteTag(tag) })
         }
     }
 }
@@ -93,7 +99,11 @@ internal fun AvoidedTagsSection(
                     )
                 },
             ) { tag ->
-                FoodTagChip(label = tag, tone = FoodChipTone.Destructive, onRemove = { onRemoveAvoidTag(tag) })
+                FoodTagChip(
+                    label = tasteTagLabel(tag),
+                    tone = FoodChipTone.Destructive,
+                    onRemove = { onRemoveAvoidTag(tag) },
+                )
             }
         }
     }

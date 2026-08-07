@@ -2,8 +2,10 @@ package com.devsgroup.foodmanager.ui
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.NavigationBar
@@ -72,16 +74,30 @@ fun FoodApp(
             // (e.g. forcedLogoutEvents) that navigate through the existing NavController.
             val startDestination = remember {
                 // Signed-out users land in the auth flow; signed-in-but-unverified users
-                // land on the email-confirmation gate; only a verified session skips both.
+                // land on the email-confirmation gate; a verified session that hasn't
+                // answered the onboarding questions gets asked them before the feed, since
+                // the feed's ranking has nothing to work with until it does.
                 when {
                     !state.isLoggedIn -> RegistrationRoute
                     !state.emailVerified -> EmailConfirmationRoute
+                    !state.onboardingComplete -> OnboardingRoute
                     else -> RecommendationsRoute
                 }
             }
             FoodManagerTheme(darkTheme = state.darkThemeEnabled) {
                 FoodAppContent(
                     startDestination = startDestination,
+                    // Read at hand-off time, not captured now: this composes before the
+                    // user has even registered, so the value that matters is whatever the
+                    // flag says once the auth flow actually completes.
+                    postAuthDestination = {
+                        val current = viewModel.uiState.value
+                        if (current is AppUiState.Ready && !current.onboardingComplete) {
+                            OnboardingRoute
+                        } else {
+                            RecommendationsRoute
+                        }
+                    },
                     forcedLogoutEvents = viewModel.forcedLogoutEvents,
                 )
             }
@@ -90,7 +106,11 @@ fun FoodApp(
 }
 
 @Composable
-private fun FoodAppContent(startDestination: Any, forcedLogoutEvents: SharedFlow<Unit>) {
+private fun FoodAppContent(
+    startDestination: Any,
+    postAuthDestination: () -> Any,
+    forcedLogoutEvents: SharedFlow<Unit>,
+) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
@@ -162,8 +182,8 @@ private fun FoodAppContent(startDestination: Any, forcedLogoutEvents: SharedFlow
             topBar = {
                 AnimatedVisibility(
                     visible = !isChromelessRoute,
-                    enter = fadeIn(),
-                    exit = fadeOut(),
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically(),
                 ) {
                     lastTopBarConfig?.let { config ->
                         FoodTopAppBar(
@@ -177,8 +197,8 @@ private fun FoodAppContent(startDestination: Any, forcedLogoutEvents: SharedFlow
             bottomBar = {
                 AnimatedVisibility(
                     visible = currentTopLevelDestination != null,
-                    enter = fadeIn(),
-                    exit = fadeOut(),
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically(),
                 ) {
                     NavigationBar {
                         TopLevelDestination.entries.forEach { destination ->
@@ -206,6 +226,7 @@ private fun FoodAppContent(startDestination: Any, forcedLogoutEvents: SharedFlow
             FoodNavHost(
                 navController = navController,
                 startDestination = startDestination,
+                postAuthDestination = postAuthDestination,
                 modifier = Modifier.padding(innerPadding),
             )
         }

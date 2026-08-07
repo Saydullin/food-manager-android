@@ -39,17 +39,47 @@ data class FoodTags(
     val diets: Set<String> = emptySet(),
 )
 
+/**
+ * Mirrors the server's fixed `GET /cuisines` catalog, in its `sortOrder`. Each entry's
+ * `name` *is* the wire code, which is what makes these safe to send straight through as
+ * taste preferences — the feed's ranking matches a preference against cuisine codes, so
+ * a value that isn't a real code simply never scores.
+ */
 enum class Cuisine {
     ITALIAN,
     JAPANESE,
+    CHINESE,
     MEXICAN,
     INDIAN,
-    CHINESE,
-    MEDITERRANEAN,
-    AMERICAN,
     THAI,
     FRENCH,
-    OTHER,
+    AMERICAN,
+    MEDITERRANEAN,
+    KOREAN,
+}
+
+/**
+ * The allergens a dish can be tagged with, as the server's UPPER_SNAKE codes (its
+ * `food_allergens` columns). Deliberately the *complete* list rather than a common
+ * subset: this backs the onboarding allergy picker, and an allergen missing from the
+ * picker is one the user cannot declare — and therefore one the feed can't filter on.
+ */
+enum class Allergen {
+    MILK,
+    EGGS,
+    PEANUTS,
+    TREE_NUTS,
+    SOY,
+    WHEAT,
+    GLUTEN,
+    FISH,
+    SHELLFISH,
+    SESAME,
+    MUSTARD,
+    CELERY,
+    LUPIN,
+    MOLLUSCS,
+    SULFITES,
 }
 
 /** Mirrors the server's fixed `GET /diets` catalog (see `add_diets` migration) exactly — an entry here that the server doesn't know sends an unrecognized code and 400s. */

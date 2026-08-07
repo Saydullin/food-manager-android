@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /** Digits in the login code the server mails to a device with no existing key. */
-private const val LOGIN_CODE_LENGTH = 6
+private const val LOGIN_CODE_LENGTH = 4
 
 /**
  * Form state for "С возвращением" — re-authenticating this device. The fast path needs

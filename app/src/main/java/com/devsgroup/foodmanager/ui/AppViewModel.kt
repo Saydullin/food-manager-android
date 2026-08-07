@@ -29,15 +29,20 @@ sealed interface AppUiState {
     data class Ready(
         val isLoggedIn: Boolean,
         val emailVerified: Boolean,
+        /** False until the account has answered (or declined) the onboarding questions. */
+        val onboardingComplete: Boolean,
         val darkThemeEnabled: Boolean,
     ) : AppUiState
 }
 
 /**
  * App-level gate over [AuthRepository.isLoggedIn], [ProfileRepository.emailVerified],
- * and [SettingsRepository.darkThemeEnabled]. [AppUiState.isLoggedIn]/[AppUiState.emailVerified]
+ * [ProfileRepository.onboardingComplete] and [SettingsRepository.darkThemeEnabled].
+ * [AppUiState.isLoggedIn]/[AppUiState.emailVerified]/[AppUiState.onboardingComplete]
  * drive only the *initial* start destination — the NavHost is composed after this
  * resolves, so the graph is built once and later token changes don't rebuild it.
+ * (`onboardingComplete` is also read once more, at the moment the auth flow hands off,
+ * to pick where a just-registered user lands — see `FoodApp`.)
  * [AppUiState.darkThemeEnabled] is read continuously instead, since the profile
  * screen's theme toggle should switch the whole app live.
  *
@@ -60,10 +65,16 @@ class AppViewModel @Inject constructor(
     val uiState: StateFlow<AppUiState> = combine(
         authRepository.isLoggedIn,
         profileRepository.emailVerified,
+        profileRepository.onboardingComplete,
         settingsRepository.darkThemeEnabled(),
         minimumSplashDuration,
-    ) { isLoggedIn, emailVerified, darkThemeEnabled, _ ->
-        AppUiState.Ready(isLoggedIn = isLoggedIn, emailVerified = emailVerified, darkThemeEnabled = darkThemeEnabled)
+    ) { isLoggedIn, emailVerified, onboardingComplete, darkThemeEnabled, _ ->
+        AppUiState.Ready(
+            isLoggedIn = isLoggedIn,
+            emailVerified = emailVerified,
+            onboardingComplete = onboardingComplete,
+            darkThemeEnabled = darkThemeEnabled,
+        )
     }
         .stateIn(
             scope = viewModelScope,

@@ -30,12 +30,18 @@ import com.devsgroup.foodmanager.feature.recommendations.navigation.recommendati
  *
  * [startDestination] is chosen by the app-level auth gate: signed-out users start in
  * the auth flow ([com.devsgroup.foodmanager.feature.auth.navigation.RegistrationRoute]),
- * signed-in users on [RecommendationsRoute].
+ * signed-in users on [OnboardingRoute] or [RecommendationsRoute] depending on whether
+ * they've answered the onboarding questions.
+ *
+ * [postAuthDestination] answers the same question at the moment the auth flow completes
+ * — a lambda rather than a value because a just-registered account flips from
+ * "unanswered" to "answered" while this graph stays composed.
  */
 @Composable
 fun FoodNavHost(
     navController: NavHostController,
     startDestination: Any,
+    postAuthDestination: () -> Any,
     modifier: Modifier = Modifier,
 ) {
     NavHost(
@@ -45,7 +51,7 @@ fun FoodNavHost(
     ) {
         authScreens(
             onAuthenticated = {
-                navController.navigate(RecommendationsRoute) {
+                navController.navigate(postAuthDestination()) {
                     // Clear the auth flow so Back never returns to it.
                     popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
                     launchSingleTop = true

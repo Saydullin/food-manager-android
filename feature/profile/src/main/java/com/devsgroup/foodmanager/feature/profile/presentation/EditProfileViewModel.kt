@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /** Digits in the email verification code the server mails out (see the auth API). */
-private const val EMAIL_CODE_LENGTH = 6
+private const val EMAIL_CODE_LENGTH = 4
 
 data class EditProfileUiState(
     val username: String = "",

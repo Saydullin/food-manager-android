@@ -15,6 +15,8 @@ import com.devsgroup.foodmanager.core.designsystem.component.FoodButton
 import com.devsgroup.foodmanager.core.designsystem.component.FoodModalBottomSheet
 import com.devsgroup.foodmanager.core.designsystem.component.FoodToggleChip
 import com.devsgroup.foodmanager.core.model.DietaryTag
+import com.devsgroup.foodmanager.core.ui.emoji
+import com.devsgroup.foodmanager.core.ui.label
 
 /** "Диета и аллергии" — a multi-select of every [DietaryTag], committed as each is tapped. */
 @Composable

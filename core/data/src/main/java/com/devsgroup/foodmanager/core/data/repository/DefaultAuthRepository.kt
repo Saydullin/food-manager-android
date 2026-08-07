@@ -143,6 +143,9 @@ class DefaultAuthRepository @Inject constructor(
         }
         authPrefs.clear()
         profileRepository.invalidateCache()
+        // Also drops any taste-profile edit still queued for sync — replaying this account's
+        // pending lists against whoever signs in next would write them to the wrong account.
+        profilePrefs.clear()
     }
 
     override suspend fun addEmail(email: String) = apiCall {

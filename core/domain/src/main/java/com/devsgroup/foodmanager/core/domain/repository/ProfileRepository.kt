@@ -12,7 +12,26 @@ interface ProfileRepository {
     /** True once the server has rejected a request with `ACCOUNT_BANNED`. Backed by DataStore. */
     val isBanned: Flow<Boolean>
 
+    /**
+     * True once this account has answered the onboarding questions — the app-level gate
+     * sends a signed-in user who hasn't into the onboarding flow instead of the feed.
+     *
+     * Also true for an account that already carries taste data (diets, exceptions or
+     * preferences set from the profile screen, or by onboarding on another device): those
+     * users have already told us what onboarding would ask, so asking again would be
+     * pointless. That's what makes a reinstall or a second device skip the questions.
+     */
+    val onboardingComplete: Flow<Boolean>
+
+    /**
+     * Emits the cached profile immediately (in-memory, or else whatever's persisted
+     * in DataStore) without hitting the network — callers that want fresh data call
+     * [refresh] alongside this.
+     */
     fun profile(): Flow<UserProfile>
+
+    /** True if a profile is already available to show immediately (in-memory or persisted), without a network call. */
+    suspend fun hasCachedProfile(): Boolean
 
     /**
      * Forces a fresh fetch from the server and pushes the result into whatever's
@@ -46,4 +65,11 @@ interface ProfileRepository {
 
     /** Full-replaces the user's selected diets (server-owned enum codes, e.g. "VEGETARIAN"). */
     suspend fun updateDiets(diets: List<String>)
+
+    /**
+     * Records that onboarding has been answered, flipping [onboardingComplete]. Called
+     * after the answers themselves are saved, so a user who quits part-way through is
+     * asked again rather than left with a half-filled profile.
+     */
+    suspend fun completeOnboarding()
 }
