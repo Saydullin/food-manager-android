@@ -34,8 +34,8 @@ import com.devsgroup.foodmanager.core.designsystem.theme.FoodManagerTheme
 import com.devsgroup.foodmanager.feature.auth.navigation.EmailConfirmationRoute
 import com.devsgroup.foodmanager.feature.auth.navigation.LoginRoute
 import com.devsgroup.foodmanager.feature.auth.navigation.RegistrationRoute
+import com.devsgroup.foodmanager.feature.dinner.navigation.WhatToEatRoute
 import com.devsgroup.foodmanager.feature.onboarding.navigation.OnboardingRoute
-import com.devsgroup.foodmanager.feature.recommendations.navigation.RecommendationsRoute
 import com.devsgroup.foodmanager.navigation.FoodNavHost
 import com.devsgroup.foodmanager.navigation.TopLevelDestination
 
@@ -81,7 +81,7 @@ fun FoodApp(
                     !state.isLoggedIn -> RegistrationRoute
                     !state.emailVerified -> EmailConfirmationRoute
                     !state.onboardingComplete -> OnboardingRoute
-                    else -> RecommendationsRoute
+                    else -> WhatToEatRoute
                 }
             }
             FoodManagerTheme(darkTheme = state.darkThemeEnabled) {
@@ -95,7 +95,7 @@ fun FoodApp(
                         if (current is AppUiState.Ready && !current.onboardingComplete) {
                             OnboardingRoute
                         } else {
-                            RecommendationsRoute
+                            WhatToEatRoute
                         }
                     },
                     forcedLogoutEvents = viewModel.forcedLogoutEvents,
@@ -165,7 +165,7 @@ private fun FoodAppContent(
     // need no such wiring: their title is derived below straight from the destination.
     val reportedTopBar = remember { mutableStateOf<FoodTopBarConfig?>(null) }
     val topBarConfig = currentTopLevelDestination
-        ?.let { FoodTopBarConfig(title = it.label) }
+        ?.let { FoodTopBarConfig(title = it.title) }
         ?: reportedTopBar.value
 
     // Retained across the push into a chromeless screen: currentDestination flips the instant

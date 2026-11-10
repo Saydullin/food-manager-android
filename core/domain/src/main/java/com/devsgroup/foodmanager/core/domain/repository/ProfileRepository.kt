@@ -1,5 +1,7 @@
 package com.devsgroup.foodmanager.core.domain.repository
 
+import com.devsgroup.foodmanager.core.model.MedicalRestriction
+import com.devsgroup.foodmanager.core.model.Sex
 import com.devsgroup.foodmanager.core.model.UserProfile
 import kotlinx.coroutines.flow.Flow
 
@@ -46,6 +48,12 @@ interface ProfileRepository {
     suspend fun refresh()
 
     suspend fun updateProfile(profile: UserProfile)
+
+    /**
+     * Saves the account owner's "me at the dinner table" fields. Unlike [updateProfile],
+     * `null` here actively clears [sex]/[age]. Online; throws a ProfileException on failure.
+     */
+    suspend fun updateDinnerSelf(sex: Sex?, age: Int?, medicalRestrictions: Set<MedicalRestriction>)
 
     /**
      * Drops any in-memory cached profile so the next [profile] collection re-reads

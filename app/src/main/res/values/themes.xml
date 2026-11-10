@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
 
-    <style name="Theme.FoodManager" parent="android:Theme.Material.Light.NoActionBar" />
+    <!--
+        Window background = the app's Compose background, so the system launch splash
+        (Android 12+) and the first frame before Compose draws match the app instead of
+        flashing white. values-night/themes.xml swaps the parent for dark mode.
+    -->
+    <style name="Theme.FoodManager" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/app_background</item>
+        <item name="android:windowSplashScreenBackground" tools:targetApi="31">@color/app_background</item>
+    </style>
 </resources>

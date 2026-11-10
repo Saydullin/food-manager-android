@@ -5,7 +5,9 @@ import com.devsgroup.foodmanager.core.domain.repository.ProfileRepository
 import com.devsgroup.foodmanager.core.model.Allergen
 import com.devsgroup.foodmanager.core.model.Cuisine
 import com.devsgroup.foodmanager.core.model.DietaryTag
+import com.devsgroup.foodmanager.core.model.MedicalRestriction
 import com.devsgroup.foodmanager.core.model.ProfileException
+import com.devsgroup.foodmanager.core.model.Sex
 import com.devsgroup.foodmanager.core.model.UserProfile
 import com.devsgroup.foodmanager.core.testing.MainDispatcherRule
 import kotlinx.coroutines.flow.Flow
@@ -47,6 +49,7 @@ private class FakeProfileRepository(
     override suspend fun hasCachedProfile(): Boolean = cached != null
     override suspend fun refresh() = Unit
     override suspend fun updateProfile(profile: UserProfile) = Unit
+    override suspend fun updateDinnerSelf(sex: Sex?, age: Int?, medicalRestrictions: Set<MedicalRestriction>) = Unit
     override fun invalidateCache() = Unit
     override suspend fun uploadAvatarImage(bytes: ByteArray, fileName: String, mimeType: String): String = ""
 

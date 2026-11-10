@@ -20,6 +20,9 @@ data class UserProfile(
     val foodPreferences: List<String> = emptyList(),
     val foodExceptions: List<String> = emptyList(),
     val diets: List<String> = emptyList(),
+    /** The account owner as an eater at the dinner table (the "Я" in the cook-dinner flow). */
+    val sex: Sex? = null,
+    val medicalRestrictions: Set<MedicalRestriction> = emptySet(),
 )
 
 /** How the user relates to cooking — shown as the optional meta line under their name. */

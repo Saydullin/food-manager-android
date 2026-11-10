@@ -42,6 +42,7 @@ include(":core:testing")      // Shared test doubles and utilities
 // domain / data / presentation packages (Clean Architecture within the module).
 include(":feature:auth")            // Registration + login (device-key auth)
 include(":feature:onboarding")      // Capture initial taste preferences
+include(":feature:dinner")          // Home ("Что едим?") + the "cook dinner" wizard
 include(":feature:discover")        // The swipe deck ("Tinder for food")
 include(":feature:recommendations") // Personalized "For You" feed
 include(":feature:favorites")       // Liked / saved foods

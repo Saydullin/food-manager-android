@@ -10,10 +10,13 @@ import com.devsgroup.foodmanager.core.datastore.ProfilePreferencesDataSource
 import com.devsgroup.foodmanager.core.datastore.valuesOf
 import com.devsgroup.foodmanager.core.datastore.withValues
 import com.devsgroup.foodmanager.core.domain.repository.ProfileRepository
+import com.devsgroup.foodmanager.core.model.MedicalRestriction
 import com.devsgroup.foodmanager.core.model.ProfileException
+import com.devsgroup.foodmanager.core.model.Sex
 import com.devsgroup.foodmanager.core.model.UserProfile
 import com.devsgroup.foodmanager.core.network.auth.model.ErrorResponse
 import com.devsgroup.foodmanager.core.network.profile.ProfileApi
+import com.devsgroup.foodmanager.core.network.profile.model.EditDinnerSelfRequest
 import com.devsgroup.foodmanager.core.network.profile.model.EditProfileRequest
 import com.devsgroup.foodmanager.core.network.profile.model.SetProfileImageRequest
 import com.devsgroup.foodmanager.core.network.toReachableMediaUrl
@@ -174,6 +177,23 @@ class DefaultProfileRepository @Inject constructor(
             result
         }
         persistServerProfile(updated, identityFrom = profile)
+    }
+
+    override suspend fun updateDinnerSelf(
+        sex: Sex?,
+        age: Int?,
+        medicalRestrictions: Set<MedicalRestriction>,
+    ) {
+        val updated = apiCall {
+            profileApi.editDinnerSelf(
+                EditDinnerSelfRequest(
+                    sex = sex?.name,
+                    age = age,
+                    medicalRestrictions = medicalRestrictions.map { it.name },
+                ),
+            ).user.toDomain()
+        }
+        persistServerProfile(updated)
     }
 
     override suspend fun uploadAvatarImage(bytes: ByteArray, fileName: String, mimeType: String): String =

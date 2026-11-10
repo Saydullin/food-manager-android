@@ -12,6 +12,9 @@ import com.devsgroup.foodmanager.feature.auth.navigation.navigateToEmailConfirma
 import com.devsgroup.foodmanager.feature.auth.navigation.navigateToLogin
 import com.devsgroup.foodmanager.feature.auth.navigation.navigateToRegistration
 import com.devsgroup.foodmanager.feature.details.navigation.foodDetailsScreen
+import com.devsgroup.foodmanager.feature.dinner.navigation.WhatToEatRoute
+import com.devsgroup.foodmanager.feature.dinner.navigation.dinnerScreens
+import com.devsgroup.foodmanager.feature.dinner.navigation.navigateToCookDinner
 import com.devsgroup.foodmanager.feature.details.navigation.navigateToFoodDetails
 import com.devsgroup.foodmanager.feature.favorites.navigation.favoritesScreen
 import com.devsgroup.foodmanager.feature.onboarding.navigation.OnboardingRoute
@@ -21,7 +24,6 @@ import com.devsgroup.foodmanager.feature.profile.navigation.groupDetailScreen
 import com.devsgroup.foodmanager.feature.profile.navigation.navigateToEditProfile
 import com.devsgroup.foodmanager.feature.profile.navigation.navigateToGroupDetail
 import com.devsgroup.foodmanager.feature.profile.navigation.profileScreen
-import com.devsgroup.foodmanager.feature.recommendations.navigation.RecommendationsRoute
 import com.devsgroup.foodmanager.feature.recommendations.navigation.recommendationsScreen
 
 /**
@@ -30,7 +32,7 @@ import com.devsgroup.foodmanager.feature.recommendations.navigation.recommendati
  *
  * [startDestination] is chosen by the app-level auth gate: signed-out users start in
  * the auth flow ([com.devsgroup.foodmanager.feature.auth.navigation.RegistrationRoute]),
- * signed-in users on [OnboardingRoute] or [RecommendationsRoute] depending on whether
+ * signed-in users on [OnboardingRoute] or [WhatToEatRoute] (the home) depending on whether
  * they've answered the onboarding questions.
  *
  * [postAuthDestination] answers the same question at the moment the auth flow completes
@@ -69,10 +71,15 @@ fun FoodNavHost(
         )
         onboardingScreen(
             onFinished = {
-                navController.navigate(RecommendationsRoute) {
+                navController.navigate(WhatToEatRoute) {
                     popUpTo(OnboardingRoute) { inclusive = true }
                 }
             },
+        )
+        dinnerScreens(
+            onCookDinner = { navController.navigateToCookDinner() },
+            onBack = { navController.navigateUp() },
+            onFoodClick = { foodId -> navController.navigateToFoodDetails(foodId) },
         )
         recommendationsScreen(onFoodClick = { foodId -> navController.navigateToFoodDetails(foodId) })
         favoritesScreen(onFoodClick = { foodId -> navController.navigateToFoodDetails(foodId) })

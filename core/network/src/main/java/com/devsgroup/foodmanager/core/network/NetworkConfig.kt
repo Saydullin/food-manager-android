@@ -2,9 +2,13 @@ package com.devsgroup.foodmanager.core.network
 
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
-/** The host/port the app talks to the backend on — see `NetworkModule.providesRetrofit`. */
+/**
+ * The host/port the app talks to the backend on — see `NetworkModule.providesRetrofit`.
+ * Set per build type in this module's build.gradle.kts: the shared server for debug/release,
+ * this computer (from local.properties) for debugLocal/releaseLocal.
+ */
 object NetworkConfig {
-    const val BASE_URL = "http://5.188.20.138:3000/api/"
+    const val BASE_URL: String = BuildConfig.BASE_URL
 }
 
 private val LOOPBACK_HOSTS = setOf("localhost", "127.0.0.1", "10.0.2.2")

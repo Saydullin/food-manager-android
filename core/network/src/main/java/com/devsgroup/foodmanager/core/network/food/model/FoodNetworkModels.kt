@@ -24,9 +24,13 @@ data class InteractionRequestDto(
 data class NutritionDto(
     val calories: Int? = null,
     val servings: Int? = null,
-    val protein: Int? = null,
-    val fat: Int? = null,
-    val carbs: Int? = null,
+    /**
+     * Grams per serving. The server stores these as floats (`24.5`), and decoding that into an
+     * `Int` throws, so they are `Double` on the wire and rounded in the mapper.
+     */
+    val protein: Double? = null,
+    val fat: Double? = null,
+    val carbs: Double? = null,
 )
 
 @Serializable
@@ -36,6 +40,18 @@ data class FoodTagsDto(
     val intolerances: List<String> = emptyList(),
     val features: List<String> = emptyList(),
     val diets: List<String> = emptyList(),
+    /** Equipment the dish needs, as UPPER_SNAKE codes (`"OVEN"`); `[]` = nothing special. */
+    val appliances: List<String> = emptyList(),
+)
+
+/** One ingredient line of a recipe; `id` is the line itself, `ingredientId` the catalog entry. */
+@Serializable
+data class FoodIngredientDto(
+    val id: String,
+    val ingredientId: String,
+    val name: String,
+    val amount: Double,
+    val unit: String,
 )
 
 /** A dish, fully shaped: same payload for feed items and single-detail lookups. */
@@ -56,6 +72,8 @@ data class FoodDto(
     val language: String = "en",
     /** Every language this dish is translated into. */
     val availableLanguages: List<String> = emptyList(),
+    /** The recipe's ingredient lines in authored order; empty for dishes without a list. */
+    val ingredients: List<FoodIngredientDto> = emptyList(),
 )
 
 /** GET /foods/feed — keyset (cursor) paginated. */

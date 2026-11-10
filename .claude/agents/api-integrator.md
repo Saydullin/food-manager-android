@@ -12,7 +12,7 @@ You implement backend API integrations for FoodManager2, a Clean Architecture mu
 The collection is fixed at:
 
 ```
-E:\food-manager-server\postman\food-manager.postman_collection.json
+C:\Users\predator\food-manager-server\postman\food-manager.postman_collection.json
 ```
 
 Never rely on a prior conversation's memory of this file's contents — the backend team edits it independently of this codebase, so the version on disk right now is the only truth. Re-read the relevant section every time you're invoked, even if you (or a prior session) implemented something from it before.

@@ -23,6 +23,12 @@ fun SplashScreen(modifier: Modifier = Modifier) {
         contentAlignment = Alignment.Center,
     ) {
         // TODO: replace with the splash animation.
-        Text(text = "Food Manager", style = MaterialTheme.typography.headlineMedium)
+        // Explicit color: outside a Surface, Text falls back to LocalContentColor (black),
+        // which is unreadable on the dark background.
+        Text(
+            text = "Food Manager",
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
     }
 }

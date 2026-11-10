@@ -16,6 +16,10 @@ interface FoodDao {
     @Query("SELECT * FROM foods WHERE id = :id")
     fun observeFood(id: String): Flow<FoodEntity?>
 
+    /** Cached rows for [ids] — lets a non-feed source refresh a dish without losing its feed slot or like. */
+    @Query("SELECT * FROM foods WHERE id IN (:ids)")
+    suspend fun getByIds(ids: List<String>): List<FoodEntity>
+
     /** Liked dishes ("Сохранённое"), most recently updated first. */
     @Query("SELECT * FROM foods WHERE liked = 1 ORDER BY updatedAt DESC")
     fun observeLiked(): Flow<List<FoodEntity>>

@@ -15,22 +15,28 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 import java.io.IOException
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
  * Backs the signed-in user's settings with the real `/users/me/settings` endpoints
  * ([SettingsApi]), syncing the server's copy on first read and after every update.
- * [SettingsPreferencesDataSource] still holds the last-known values so the app has
- * something to show immediately and while offline; if the initial fetch fails, the
- * local values (or their defaults) are used instead of leaving the caller stuck.
+ *
+ * Reads never wait on the network: the first collector gets the last-known local
+ * values ([SettingsPreferencesDataSource], or defaults) at once, and the server's copy
+ * replaces them when it arrives. That matters because the app-level splash waits on
+ * [darkThemeEnabled] — blocking it on the fetch held the splash for the full OkHttp
+ * connect timeout (~10 s) whenever the server was unreachable.
  */
 @Singleton
 class DefaultSettingsRepository @Inject constructor(
@@ -41,9 +47,19 @@ class DefaultSettingsRepository @Inject constructor(
 
     private val cache = MutableStateFlow<SettingsDto?>(null)
 
-    private val settingsFlow: Flow<SettingsDto> = cache
-        .onStart { if (cache.value == null) cache.value = fetchSettings() }
-        .filterNotNull()
+    /** One server fetch per process; reset on failure so the next reader retries. */
+    private val serverFetchStarted = AtomicBoolean(false)
+
+    /** Bumped by every local edit, so a fetch that started before it can't overwrite it. */
+    private val localEdits = AtomicInteger(0)
+
+    private val settingsFlow: Flow<SettingsDto> = channelFlow {
+        if (cache.value == null) cache.value = localSnapshot()
+        // Tied to this collector's scope: if nobody is listening any more, there's no
+        // one to deliver the result to, and the next collector starts a fresh attempt.
+        if (serverFetchStarted.compareAndSet(false, true)) launch { refreshFromServer() }
+        cache.filterNotNull().collect { send(it) }
+    }
 
     override fun notificationsEnabled(): Flow<Boolean> = settingsFlow.map { it.pushNotificationsEnabled }
 
@@ -63,24 +79,35 @@ class DefaultSettingsRepository @Inject constructor(
         updateSettings(UpdateSettingsRequest(language = language.tag))
     }
 
-    private suspend fun fetchSettings(): SettingsDto = try {
-        apiCall { settingsApi.mySettings().settings }.also { persistLocally(it) }
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: IOException) {
-        localSnapshot()
-    } catch (e: HttpException) {
-        localSnapshot()
+    /** Adopts the server's copy, unless a local edit landed while the request was in flight. */
+    private suspend fun refreshFromServer() {
+        val editsBefore = localEdits.get()
+        try {
+            val server = apiCall { settingsApi.mySettings().settings }
+            if (localEdits.get() == editsBefore) {
+                cache.value = server
+                persistLocally(server)
+            }
+        } catch (e: CancellationException) {
+            serverFetchStarted.set(false)
+            throw e
+        } catch (e: IOException) {
+            // Offline: keep showing the local values; a later reader tries again.
+            serverFetchStarted.set(false)
+        } catch (e: HttpException) {
+            serverFetchStarted.set(false)
+        }
     }
 
     /**
      * Applies [request] to the local cache immediately so the UI (a switch, a radio
      * choice) flips right away instead of waiting on the network round trip, then
      * syncs it to the server in the background. On failure the optimistic value is
-     * kept — same offline-friendly stance as [fetchSettings].
+     * kept — same offline-friendly stance as [refreshFromServer].
      */
     private suspend fun updateSettings(request: UpdateSettingsRequest) {
-        val current = cache.value ?: fetchSettings()
+        localEdits.incrementAndGet()
+        val current = cache.value ?: localSnapshot()
         val optimistic = current.copy(
             language = request.language ?: current.language,
             theme = request.theme ?: current.theme,
@@ -95,7 +122,7 @@ class DefaultSettingsRepository @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            // Offline — keep the optimistic value, matching fetchSettings' fallback.
+            // Offline — keep the optimistic value, same as a failed refresh.
         } catch (e: HttpException) {
             // Server rejected it — keep the optimistic value rather than reverting mid-interaction.
         }

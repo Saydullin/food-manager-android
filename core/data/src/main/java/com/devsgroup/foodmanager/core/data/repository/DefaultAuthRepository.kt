@@ -3,7 +3,10 @@ package com.devsgroup.foodmanager.core.data.repository
 import com.devsgroup.foodmanager.core.common.di.Dispatcher
 import com.devsgroup.foodmanager.core.common.di.FoodDispatcher
 import com.devsgroup.foodmanager.core.data.mapper.toDomain
+import com.devsgroup.foodmanager.core.database.dao.EaterDao
 import com.devsgroup.foodmanager.core.datastore.AuthPreferencesDataSource
+import com.devsgroup.foodmanager.core.datastore.KitchenPreferencesDataSource
+import com.devsgroup.foodmanager.core.datastore.PantryPreferencesDataSource
 import com.devsgroup.foodmanager.core.datastore.ProfilePreferencesDataSource
 import com.devsgroup.foodmanager.core.domain.repository.AuthRepository
 import com.devsgroup.foodmanager.core.domain.repository.ProfileRepository
@@ -52,6 +55,9 @@ class DefaultAuthRepository @Inject constructor(
     private val authApi: AuthApi,
     private val authPrefs: AuthPreferencesDataSource,
     private val profilePrefs: ProfilePreferencesDataSource,
+    private val kitchenPrefs: KitchenPreferencesDataSource,
+    private val pantryPrefs: PantryPreferencesDataSource,
+    private val eaterDao: EaterDao,
     private val profileRepository: ProfileRepository,
     private val json: Json,
     @Dispatcher(FoodDispatcher.IO) private val ioDispatcher: CoroutineDispatcher,
@@ -146,6 +152,11 @@ class DefaultAuthRepository @Inject constructor(
         // Also drops any taste-profile edit still queued for sync — replaying this account's
         // pending lists against whoever signs in next would write them to the wrong account.
         profilePrefs.clear()
+        // The household, kitchen and pantry describe this account's home, not the device's —
+        // including any edit still queued for sync, which must not reach the next account.
+        eaterDao.clear()
+        kitchenPrefs.clear()
+        pantryPrefs.clear()
     }
 
     override suspend fun addEmail(email: String) = apiCall {

@@ -19,6 +19,20 @@ data class Food(
     val language: String = "en",
     /** Every language this dish is translated into. */
     val availableLanguages: List<String> = emptyList(),
+    /**
+     * The recipe's ingredient lines, in authored order. Empty when unknown — the Room
+     * cache doesn't store them, so a dish read back from the feed cache has none.
+     */
+    val ingredients: List<FoodIngredient> = emptyList(),
+)
+
+/** One ingredient line of a recipe: a catalog ingredient and how much of it. */
+data class FoodIngredient(
+    val ingredientId: String,
+    val name: String,
+    val amount: Double,
+    /** Free text from the recipe author, e.g. `"g"`, `"ml"`, `"pcs"`. */
+    val unit: String,
 )
 
 /** Per-serving nutrition (КБЖУ); any field may be unknown. */
@@ -37,6 +51,8 @@ data class FoodTags(
     val intolerances: Set<String> = emptySet(),
     val features: Set<String> = emptySet(),
     val diets: Set<String> = emptySet(),
+    /** Equipment the dish needs, as [KitchenAppliance] names (`"OVEN"`); empty = nothing special. */
+    val appliances: Set<String> = emptySet(),
 )
 
 /**

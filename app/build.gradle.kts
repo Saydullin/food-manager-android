@@ -34,6 +34,29 @@ android {
                 enable = false
             }
         }
+        // Same as debug/release, but talking to a backend on this computer (the address is
+        // set in local.properties — see core/network/build.gradle.kts). A separate
+        // applicationId so a local build installs next to the regular one instead of
+        // replacing it (and its session) — they're different servers with different accounts.
+        create("debugLocal") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".local"
+            versionNameSuffix = "-local"
+            // Only :core:network has its own *Local variants; every other module falls back.
+            matchingFallbacks += listOf("debug")
+        }
+        create("releaseLocal") {
+            initWith(getByName("release"))
+            applicationIdSuffix = ".local"
+            versionNameSuffix = "-local"
+            matchingFallbacks += listOf("release")
+        }
+    }
+    sourceSets {
+        // App name "(local)" and cleartext HTTP to any host — the local server's LAN IP
+        // differs per developer, so it can't be listed in the main network config.
+        getByName("debugLocal").res.srcDir("src/local/res")
+        getByName("releaseLocal").res.srcDir("src/local/res")
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -44,13 +67,14 @@ android {
     }
 }
 
-// Rename every built APK to FoodManager_<versionName>.apk.
+// Rename every built APK to FoodManager_<versionName>.apk (…-local.apk for the *Local types).
 // AGP 9 removed the legacy `applicationVariants` API, so this hooks the new
-// variant API instead. Debug/release land in their own outputs/apk/<type>/ folder.
+// variant API instead. Each build type lands in its own outputs/apk/<type>/ folder.
 androidComponents {
     onVariants { variant ->
+        val suffix = if (variant.buildType.orEmpty().endsWith("Local")) "-local" else ""
         variant.outputs.forEach { output ->
-            (output as? VariantOutputImpl)?.outputFileName?.set("FoodManager_$appVersionName.apk")
+            (output as? VariantOutputImpl)?.outputFileName?.set("FoodManager_$appVersionName$suffix.apk")
         }
     }
 }
@@ -87,6 +111,7 @@ dependencies {
     // Feature modules — the app is the composition root that assembles them.
     implementation(project(":feature:auth"))
     implementation(project(":feature:onboarding"))
+    implementation(project(":feature:dinner"))
     implementation(project(":feature:discover"))
     implementation(project(":feature:recommendations"))
     implementation(project(":feature:favorites"))

@@ -2,16 +2,24 @@ package com.devsgroup.foodmanager.core.data.di
 
 import com.devsgroup.foodmanager.core.data.crypto.AndroidKeystoreDeviceKeyRepository
 import com.devsgroup.foodmanager.core.data.repository.DefaultAuthRepository
+import com.devsgroup.foodmanager.core.data.repository.DefaultDinnerRepository
 import com.devsgroup.foodmanager.core.data.repository.DefaultFoodRepository
 import com.devsgroup.foodmanager.core.data.repository.DefaultGroupRepository
+import com.devsgroup.foodmanager.core.data.repository.DefaultHouseholdRepository
+import com.devsgroup.foodmanager.core.data.repository.DefaultKitchenRepository
+import com.devsgroup.foodmanager.core.data.repository.DefaultPantryRepository
 import com.devsgroup.foodmanager.core.data.repository.DefaultProfileRepository
 import com.devsgroup.foodmanager.core.data.repository.DefaultRecipeRepository
 import com.devsgroup.foodmanager.core.data.repository.DefaultSettingsRepository
 import com.devsgroup.foodmanager.core.data.repository.DefaultTasteProfileRepository
 import com.devsgroup.foodmanager.core.domain.repository.AuthRepository
 import com.devsgroup.foodmanager.core.domain.repository.DeviceKeyRepository
+import com.devsgroup.foodmanager.core.domain.repository.DinnerRepository
 import com.devsgroup.foodmanager.core.domain.repository.FoodRepository
 import com.devsgroup.foodmanager.core.domain.repository.GroupRepository
+import com.devsgroup.foodmanager.core.domain.repository.HouseholdRepository
+import com.devsgroup.foodmanager.core.domain.repository.KitchenRepository
+import com.devsgroup.foodmanager.core.domain.repository.PantryRepository
 import com.devsgroup.foodmanager.core.domain.repository.ProfileRepository
 import com.devsgroup.foodmanager.core.domain.repository.RecipeRepository
 import com.devsgroup.foodmanager.core.domain.repository.SettingsRepository
@@ -58,4 +66,20 @@ abstract class DataModule {
     @Binds
     @Singleton
     abstract fun bindsSettingsRepository(impl: DefaultSettingsRepository): SettingsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindsHouseholdRepository(impl: DefaultHouseholdRepository): HouseholdRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindsKitchenRepository(impl: DefaultKitchenRepository): KitchenRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindsPantryRepository(impl: DefaultPantryRepository): PantryRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindsDinnerRepository(impl: DefaultDinnerRepository): DinnerRepository
 }

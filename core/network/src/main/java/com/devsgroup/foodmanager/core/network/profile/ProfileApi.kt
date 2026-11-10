@@ -1,5 +1,6 @@
 package com.devsgroup.foodmanager.core.network.profile
 
+import com.devsgroup.foodmanager.core.network.profile.model.EditDinnerSelfRequest
 import com.devsgroup.foodmanager.core.network.profile.model.EditProfileRequest
 import com.devsgroup.foodmanager.core.network.profile.model.ProfileResponse
 import com.devsgroup.foodmanager.core.network.profile.model.SetDietsRequest
@@ -26,6 +27,10 @@ interface ProfileApi {
 
     @PATCH("users/me")
     suspend fun editProfile(@Body body: EditProfileRequest): ProfileResponse
+
+    /** Separate from [editProfile] so the dinner fields can be cleared (`sex`/`age` sent as null). */
+    @PATCH("users/me")
+    suspend fun editDinnerSelf(@Body body: EditDinnerSelfRequest): ProfileResponse
 
     @PUT("users/me/image")
     suspend fun setProfileImage(@Body body: SetProfileImageRequest): ProfileResponse

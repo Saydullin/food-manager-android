@@ -1,5 +1,7 @@
 package com.devsgroup.foodmanager.core.data.mapper
 
+import com.devsgroup.foodmanager.core.model.MedicalRestriction
+import com.devsgroup.foodmanager.core.model.Sex
 import com.devsgroup.foodmanager.core.model.UserProfile
 import com.devsgroup.foodmanager.core.network.profile.model.ProfileUserDto
 import com.devsgroup.foodmanager.core.network.toReachableMediaUrl
@@ -22,4 +24,6 @@ internal fun ProfileUserDto.toDomain() = UserProfile(
     foodPreferences = foodPreferences,
     foodExceptions = foodExceptions,
     diets = diets,
+    sex = sex.toKnownEnumOrNull<Sex>(),
+    medicalRestrictions = medicalRestrictions.toKnownEnumSet<MedicalRestriction>(),
 )

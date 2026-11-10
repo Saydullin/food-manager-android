@@ -1,6 +1,9 @@
 package com.devsgroup.foodmanager.core.network.profile.model
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonPrimitive
 
 /**
  * Wire models for the Food Manager profile API (`/users/me`). Field names match the
@@ -25,6 +28,28 @@ data class EditProfileRequest(
     val status: String = "",
     val description: String = "",
 )
+
+/**
+ * Body for `PATCH /users/me` carrying the account owner's dinner-table fields. `sex` and
+ * `age` are always sent: the shared Json has `explicitNulls = false`, which would drop a
+ * Kotlin `null` and make "clear it" indistinguishable from "leave it alone" — so they are
+ * held as [JsonElement]s, where [JsonNull] is a real value that serializes as `null`.
+ * `medicalRestrictions` replaces the whole list (`[]` clears it).
+ *
+ * Build it with the secondary constructor: `EditDinnerSelfRequest("MALE", null, listOf("LOW_SALT"))`.
+ */
+@Serializable
+data class EditDinnerSelfRequest(
+    val sex: JsonElement,
+    val age: JsonElement,
+    val medicalRestrictions: List<String>,
+) {
+    constructor(sex: String?, age: Int?, medicalRestrictions: List<String>) : this(
+        sex = sex?.let(::JsonPrimitive) ?: JsonNull,
+        age = age?.let(::JsonPrimitive) ?: JsonNull,
+        medicalRestrictions = medicalRestrictions,
+    )
+}
 
 @Serializable
 data class SetProfileImageRequest(val imageUrl: String)
@@ -69,6 +94,10 @@ data class ProfileUserDto(
     val foodPreferences: List<String> = emptyList(),
     val foodExceptions: List<String> = emptyList(),
     val diets: List<String> = emptyList(),
+    /** `"MALE"` | `"FEMALE"` | null — the account owner as an eater at the dinner table. */
+    val sex: String? = null,
+    /** Doctor's recommendations (`LOW_SALT`, ...); decoded and filtered to known codes by the mapper. */
+    val medicalRestrictions: List<String> = emptyList(),
 )
 
 /** Envelope shared by GET/PATCH `/users/me` and the image set/remove endpoints. */

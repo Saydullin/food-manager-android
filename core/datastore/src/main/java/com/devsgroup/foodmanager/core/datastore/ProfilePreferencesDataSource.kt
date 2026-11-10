@@ -8,7 +8,10 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import com.devsgroup.foodmanager.core.model.CookingAttitude
+import com.devsgroup.foodmanager.core.model.MedicalRestriction
+import com.devsgroup.foodmanager.core.model.Sex
 import com.devsgroup.foodmanager.core.model.UserProfile
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -66,6 +69,8 @@ class ProfilePreferencesDataSource @Inject constructor(
             val age = profile.age
             if (age != null) prefs[AGE] = age else prefs.remove(AGE)
             profile.cookingAttitude?.name.putOrRemove(prefs, COOKING_ATTITUDE)
+            profile.sex?.name.putOrRemove(prefs, SEX)
+            prefs[MEDICAL_RESTRICTIONS] = profile.medicalRestrictions.mapTo(mutableSetOf()) { it.name }
             for (list in ProfilePreferenceList.entries) {
                 prefs[list.valueKey] = profile.valuesOf(list).encode()
             }
@@ -118,6 +123,8 @@ class ProfilePreferencesDataSource @Inject constructor(
             prefs.remove(COOKING_ATTITUDE)
             prefs.remove(BIO)
             prefs.remove(ONBOARDING_COMPLETE)
+            prefs.remove(SEX)
+            prefs.remove(MEDICAL_RESTRICTIONS)
             for (list in ProfilePreferenceList.entries) {
                 prefs.remove(list.valueKey)
                 prefs.remove(list.pendingKey)
@@ -146,6 +153,9 @@ class ProfilePreferencesDataSource @Inject constructor(
             foodPreferences = this[FOOD_PREFERENCES].decodeList(),
             foodExceptions = this[FOOD_EXCEPTIONS].decodeList(),
             diets = this[DIETS].decodeList(),
+            sex = this[SEX]?.let { code -> Sex.entries.firstOrNull { it.name == code } },
+            medicalRestrictions = this[MEDICAL_RESTRICTIONS].orEmpty()
+                .mapNotNullTo(mutableSetOf()) { code -> MedicalRestriction.entries.firstOrNull { it.name == code } },
         )
     }
 
@@ -186,6 +196,8 @@ class ProfilePreferencesDataSource @Inject constructor(
         val COOKING_ATTITUDE = stringPreferencesKey("profile_cooking_attitude")
         val BIO = stringPreferencesKey("profile_bio")
         val ONBOARDING_COMPLETE = booleanPreferencesKey("profile_onboarding_complete")
+        val SEX = stringPreferencesKey("profile_sex")
+        val MEDICAL_RESTRICTIONS = stringSetPreferencesKey("profile_medical_restrictions")
 
         val FOOD_PREFERENCES = stringPreferencesKey("profile_food_preferences")
         val FOOD_EXCEPTIONS = stringPreferencesKey("profile_food_exceptions")
